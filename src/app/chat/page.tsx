@@ -111,14 +111,30 @@ export default function ChatPage() {
   useEffect(() => {
     if (socket) {
       socket.on('message:receive', (message: Message) => {
-        setMessages(prev => [...prev, message])
+        setMessages(prev => {
+          // Check if this is a response to a temporary message we sent
+          const isTemporary = message.senderId === user?.id && 
+            prev.some(m => m.id.startsWith('temp-') && m.content === message.content);
+          
+          if (isTemporary) {
+            // Replace the temporary message with the actual one
+            return prev.map(m => 
+              m.id.startsWith('temp-') && m.content === message.content 
+                ? message 
+                : m
+            );
+          } else {
+            // Add new received message
+            return [...prev, message];
+          }
+        });
         // Refresh chat list to update last message and unread count
-        fetchChats()
+        fetchChats();
       })
 
       socket.on('messages:read', () => {
         // Refresh chat list when messages are marked as read
-        fetchChats()
+        fetchChats();
       })
 
       socket.on('user:online', (data: { userId: string, username: string }) => {
@@ -140,7 +156,7 @@ export default function ChatPage() {
         socket.off('user:offline')
       }
     }
-  }, [socket])
+  }, [socket, user])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -183,6 +199,21 @@ export default function ChatPage() {
       };
     }
   }, [selectedUser, user, clipboardImage])
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any remaining object URLs to prevent memory leaks
+      messages.forEach(message => {
+        if (message.fileUrl && message.fileUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(message.fileUrl);
+        }
+      });
+      if (clipboardImage) {
+        URL.revokeObjectURL(clipboardImage.url);
+      }
+    };
+  }, [messages, clipboardImage]);
 
   // Click outside handler to close emoji picker
   useEffect(() => {
@@ -257,8 +288,28 @@ export default function ChatPage() {
     
     if (!isConnected) {
       console.log('sendMessage: Socket not connected')
+      // Show error to user
+      alert('Нет подключения к серверу. Проверьте соединение.')
       return
     }
+
+    // Create a temporary message object to show immediately
+    const tempMessage: Message = {
+      id: 'temp-' + Date.now(),
+      content: messageText,
+      senderId: user!.id,
+      receiverId: selectedUser.id,
+      isRead: false,
+      createdAt: new Date(),
+      sender: {
+        id: user!.id,
+        username: user!.username,
+        avatar: user!.avatar || null
+      }
+    }
+
+    // Immediately add to local state for instant feedback
+    setMessages(prev => [...prev, tempMessage])
 
     console.log('sendMessage: Sending message to', selectedUser.username)
     socket.emit('message:send', {
@@ -285,6 +336,27 @@ export default function ChatPage() {
       return
     }
 
+    // Create a temporary message object to show immediately
+    const tempMessage: Message = {
+      id: 'temp-' + Date.now(),
+      content: '',
+      senderId: user.id,
+      receiverId: selectedUser.id,
+      isRead: false,
+      createdAt: new Date(),
+      sender: {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar || null
+      },
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file), // Preview URL
+      fileType: file.type,
+      fileSize: file.size
+    }
+
+    // Immediately add to local state for instant feedback
+    setMessages(prev => [...prev, tempMessage])
     setIsUploading(true)
     
     try {
@@ -314,9 +386,13 @@ export default function ChatPage() {
       } else {
         const errorData = await response.json()
         console.error('File upload failed:', errorData.error)
+        // Remove the temporary message if upload fails
+        setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
       }
     } catch (error) {
       console.error('File upload error:', error)
+      // Remove the temporary message if upload fails
+      setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
     } finally {
       setIsUploading(false)
     }

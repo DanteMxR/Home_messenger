@@ -92,9 +92,12 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
       }
 
       // Handle sending messages
-      socket.on('message:send', async (data) => {
+      socket.on('message:send', async (data, callback) => {
         try {
-          if (!socket.userId) return
+          if (!socket.userId) {
+            if (callback) callback({ error: 'User not authenticated' });
+            return;
+          }
 
           const { content, receiverId, chatId } = data
 
@@ -133,16 +136,23 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             io.to(`user:${receiverId}`).emit('message:receive', message)
             io.to(`user:${socket.userId}`).emit('message:receive', message)
           }
+          
+          // Send acknowledgment back to sender
+          if (callback) callback({ success: true, message });
         } catch (error) {
           console.error('Error sending message:', error)
+          if (callback) callback({ error: 'Не удалось отправить сообщение' });
           socket.emit('error', { message: 'Не удалось отправить сообщение' })
         }
       })
 
       // Handle sending file messages
-      socket.on('file:send', async (data) => {
+      socket.on('file:send', async (data, callback) => {
         try {
-          if (!socket.userId) return
+          if (!socket.userId) {
+            if (callback) callback({ error: 'User not authenticated' });
+            return;
+          }
 
           const { content, receiverId, chatId, fileName, fileUrl, fileType, fileSize } = data
 
@@ -183,10 +193,15 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
           } else if (receiverId) {
             // Direct message
             io.to(`user:${receiverId}`).emit('message:receive', message)
+            // Also send to sender so they see it immediately
             io.to(`user:${socket.userId}`).emit('message:receive', message)
           }
+          
+          // Send acknowledgment back to sender
+          if (callback) callback({ success: true, message });
         } catch (error) {
           console.error('Error sending file message:', error)
+          if (callback) callback({ error: 'Не удалось отправить файл' });
           socket.emit('error', { message: 'Не удалось отправить файл' })
         }
       })
