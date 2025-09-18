@@ -442,107 +442,113 @@ export default function ChatPage() {
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold flex items-center">
-              <MessageCircle className="mr-2 h-5 w-5 text-blue-600" />
+            <h1 className="text-xl font-bold flex items-center text-gray-800">
+              <MessageCircle className="mr-2 h-6 w-6 text-blue-600" />
               Мессенджер
             </h1>
             <div className="flex items-center space-x-2">
-              <Badge variant={isConnected ? "default" : "destructive"} className="text-xs">
+              <Badge variant={isConnected ? "default" : "destructive"} className="text-xs py-1 px-2">
                 {isConnected ? 'Онлайн' : 'Оффлайн'}
               </Badge>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="p-2"
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 text-gray-600" />
               </Button>
             </div>
           </div>
           
           {/* User info */}
-          <div className="flex items-center space-x-3 mb-4 flex-shrink-0">
-            <Avatar>
-              <AvatarFallback>{user?.username.charAt(0).toUpperCase()}</AvatarFallback>
+          <div className="flex items-center space-x-3 mb-4 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-100">
+            <Avatar className="h-12 w-12">
+              <AvatarFallback className="text-lg font-semibold bg-blue-100 text-blue-800">{user?.username.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="font-medium">{user?.username}</p>
-              <p className="text-sm text-gray-500">Пользователь</p>
+              <p className="font-semibold text-gray-900">{user?.username}</p>
+              <p className="text-sm text-gray-600">Пользователь</p>
             </div>
           </div>
 
           {/* Search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Поиск пользователей..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 py-2 rounded-lg bg-gray-100 border-0 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
         </div>
 
         {/* Users list */}
         <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-2">
+          <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Контакты
+          </div>
+          <ScrollArea className="h-full px-2">
+            <div className="pb-2">
               {users.map((user) => (
-                <Card
+                <div
                   key={user.id}
-                  className={`mb-2 cursor-pointer transition-colors hover:bg-gray-50 ${
-                    selectedUser?.id === user.id ? 'bg-blue-50 border-blue-200' : ''
+                  className={`mb-1 rounded-xl p-3 cursor-pointer transition-all duration-200 ${
+                    selectedUser?.id === user.id 
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-sm' 
+                      : 'hover:bg-gray-50 border border-transparent'
                   }`}
                   onClick={() => setSelectedUser(user)}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-start space-x-3">
-                      <div className="relative flex-shrink-0">
-                        <Avatar>
-                          <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <Circle 
-                          className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
-                            user.isOnline ? 'text-green-500 fill-green-500' : 'text-gray-400 fill-gray-400'
-                          }`} 
-                        />
-                        {user.unreadCount > 0 && (
-                          <Badge 
-                            variant="destructive" 
-                            className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                          >
-                            {user.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                          <p className="font-medium truncate">{user.username}</p>
-                          {user.lastMessage && (
-                            <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                              {formatTime(user.lastMessage.createdAt)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <p className="text-sm text-gray-600 truncate">
-                            {getLastMessagePreview(user)}
-                          </p>
-                          {user.isOnline ? (
-                            <span className="text-xs text-green-600 ml-2">В сети</span>
-                          ) : null}
-                        </div>
-                        {!user.isOnline && (
-                          <p className="text-xs text-gray-500 mt-1 flex items-center">
-                            <Clock className="mr-1 h-3 w-3" />
-                            {formatLastSeen(user.lastSeen)}
-                          </p>
-                        )}
-                      </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="font-medium bg-gray-200 text-gray-700">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <Circle 
+                        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
+                          user.isOnline ? 'text-green-500 fill-green-500 shadow-sm' : 'text-gray-400 fill-gray-400'
+                        }`} 
+                      />
+                      {user.unreadCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full shadow-sm animate-pulse"
+                        >
+                          {user.unreadCount}
+                        </Badge>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <p className="font-semibold text-gray-900 truncate">{user.username}</p>
+                        {user.lastMessage && (
+                          <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                            {formatTime(user.lastMessage.createdAt)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className={`text-sm truncate ${user.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                          {getLastMessagePreview(user)}
+                        </p>
+                        {user.isOnline ? (
+                          <span className="text-xs text-green-600 ml-2 flex items-center">
+                            <Circle className="h-1.5 w-1.5 fill-current mr-1" />
+                            В сети
+                          </span>
+                        ) : null}
+                      </div>
+                      {!user.isOnline && user.lastMessage && (
+                        <p className="text-xs text-gray-500 mt-1 flex items-center">
+                          <Clock className="mr-1 h-3 w-3" />
+                          {formatLastSeen(user.lastSeen)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </ScrollArea>
