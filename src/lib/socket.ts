@@ -139,6 +139,58 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
         }
       })
 
+      // Handle sending file messages
+      socket.on('file:send', async (data) => {
+        try {
+          if (!socket.userId) return
+
+          const { content, receiverId, chatId, fileName, fileUrl, fileType, fileSize } = data
+
+          // Save message with file to database
+          const message = await prisma.message.create({
+            data: {
+              content: content || '',
+              senderId: socket.userId,
+              receiverId,
+              chatId,
+              fileName,
+              fileUrl,
+              fileType,
+              fileSize,
+            },
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatar: true
+                }
+              },
+              receiver: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatar: true
+                }
+              }
+            }
+          })
+
+          // Send to appropriate room
+          if (chatId) {
+            // Group chat
+            io.to(`chat:${chatId}`).emit('message:receive', message)
+          } else if (receiverId) {
+            // Direct message
+            io.to(`user:${receiverId}`).emit('message:receive', message)
+            io.to(`user:${socket.userId}`).emit('message:receive', message)
+          }
+        } catch (error) {
+          console.error('Error sending file message:', error)
+          socket.emit('error', { message: 'Не удалось отправить файл' })
+        }
+      })
+
       // Handle joining chat rooms
       socket.on('chat:join', (chatId) => {
         socket.join(`chat:${chatId}`)

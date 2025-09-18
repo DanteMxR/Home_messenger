@@ -67,5 +67,28 @@ model Message {
   receiver User? @relation("UserReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
   chat     Chat? @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
+  // File attachment fields
+  fileName     String?  // Name of the uploaded file
+  fileUrl      String?  // URL to access the file
+  fileType     String?  // MIME type of the file (image/png, application/pdf, etc.)
+  fileSize     Int?     // Size of the file in bytes
+
+  // Relation to File model
+  files File[]
+
   @@map("messages")
+}
+
+model File {
+  id        String   @id @default(cuid())
+  name      String   // Original file name
+  url       String   // URL to access the file
+  type      String   // MIME type
+  size      Int      // File size in bytes
+  messageId String   // Reference to the message
+  createdAt DateTime @default(now())
+
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("files")
 }
