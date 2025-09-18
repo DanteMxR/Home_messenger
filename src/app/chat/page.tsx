@@ -58,9 +58,22 @@ interface Message {
   fileSize?: number | null
 }
 
+// Enhanced chat interface with last message and unread count
+interface ChatUser extends User {
+  lastMessage: {
+    id: string
+    content: string
+    senderId: string
+    createdAt: Date
+    fileName: string | null
+    fileType: string | null
+  } | null
+  unreadCount: number
+}
+
 export default function ChatPage() {
   const { user, logout, isConnected } = useAuth()
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<ChatUser[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [messageText, setMessageText] = useState('')
@@ -78,17 +91,19 @@ export default function ChatPage() {
   // Get socket from global instance since it's managed by AuthContext
   const socket = getSocket()
 
-  // Load users
+  // Load users with chat info
   useEffect(() => {
     if (user) {
-      fetchUsers()
+      fetchChats()
     }
-  }, [user])
+  }, [user, searchTerm])
 
   // Load messages when user is selected
   useEffect(() => {
     if (selectedUser) {
       fetchMessages(selectedUser.id)
+      // Mark messages as read when opening chat
+      markMessagesAsRead(selectedUser.id)
     }
   }, [selectedUser])
 
@@ -97,6 +112,13 @@ export default function ChatPage() {
     if (socket) {
       socket.on('message:receive', (message: Message) => {
         setMessages(prev => [...prev, message])
+        // Refresh chat list to update last message and unread count
+        fetchChats()
+      })
+
+      socket.on('messages:read', () => {
+        // Refresh chat list when messages are marked as read
+        fetchChats()
       })
 
       socket.on('user:online', (data: { userId: string, username: string }) => {
@@ -113,6 +135,7 @@ export default function ChatPage() {
 
       return () => {
         socket.off('message:receive')
+        socket.off('messages:read')
         socket.off('user:online')
         socket.off('user:offline')
       }
@@ -159,7 +182,7 @@ export default function ChatPage() {
         }
       };
     }
-  }, [selectedUser, user, clipboardImage]);
+  }, [selectedUser, user, clipboardImage])
 
   // Click outside handler to close emoji picker
   useEffect(() => {
@@ -173,17 +196,17 @@ export default function ChatPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEmojiPicker]);
+  }, [showEmojiPicker])
 
-  const fetchUsers = async () => {
+  const fetchChats = async () => {
     try {
-      const response = await fetch(`/api/users?search=${searchTerm}`)
+      const response = await fetch(`/api/chats?search=${searchTerm}`)
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.users)
+        setUsers(data.chats)
       }
     } catch (error) {
-      console.error('Error fetching users:', error)
+      console.error('Error fetching chats:', error)
     }
   }
 
@@ -196,6 +219,28 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('Error fetching messages:', error)
+    }
+  }
+
+  const markMessagesAsRead = async (senderId: string) => {
+    try {
+      // Use socket to mark messages as read
+      if (socket && socket.connected) {
+        socket.emit('messages:mark-as-read', { senderId })
+      } else {
+        // Fallback to API call
+        await fetch('/api/messages/mark-as-read', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ senderId }),
+        })
+      }
+      // Refresh chat list to update unread counts
+      fetchChats()
+    } catch (error) {
+      console.error('Error marking messages as read:', error)
     }
   }
 
@@ -375,6 +420,21 @@ export default function ChatPage() {
     return fileType.startsWith('image/')
   }
 
+  // Function to get preview text for last message
+  const getLastMessagePreview = (chatUser: ChatUser) => {
+    if (!chatUser.lastMessage) return 'Нет сообщений'
+    
+    if (chatUser.lastMessage.fileName) {
+      if (chatUser.lastMessage.fileType?.startsWith('image/')) {
+        return '📷 Изображение'
+      } else {
+        return `📁 ${chatUser.lastMessage.fileName}`
+      }
+    }
+    
+    return chatUser.lastMessage.content || 'Пустое сообщение'
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
@@ -437,8 +497,8 @@ export default function ChatPage() {
                   onClick={() => setSelectedUser(user)}
                 >
                   <CardContent className="p-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
+                    <div className="flex items-start space-x-3">
+                      <div className="relative flex-shrink-0">
                         <Avatar>
                           <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
@@ -447,19 +507,38 @@ export default function ChatPage() {
                             user.isOnline ? 'text-green-500 fill-green-500' : 'text-gray-400 fill-gray-400'
                           }`} 
                         />
+                        {user.unreadCount > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                          >
+                            {user.unreadCount}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{user.username}</p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {user.isOnline ? (
-                            <span className="text-green-600">В сети</span>
-                          ) : (
-                            <span className="flex items-center">
-                              <Clock className="mr-1 h-3 w-3" />
-                              {formatLastSeen(user.lastSeen)}
+                        <div className="flex justify-between items-start">
+                          <p className="font-medium truncate">{user.username}</p>
+                          {user.lastMessage && (
+                            <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                              {formatTime(user.lastMessage.createdAt)}
                             </span>
                           )}
-                        </p>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <p className="text-sm text-gray-600 truncate">
+                            {getLastMessagePreview(user)}
+                          </p>
+                          {user.isOnline ? (
+                            <span className="text-xs text-green-600 ml-2">В сети</span>
+                          ) : null}
+                        </div>
+                        {!user.isOnline && (
+                          <p className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Clock className="mr-1 h-3 w-3" />
+                            {formatLastSeen(user.lastSeen)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>

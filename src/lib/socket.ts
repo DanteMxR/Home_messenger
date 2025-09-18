@@ -191,6 +191,36 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
         }
       })
 
+      // Handle marking messages as read
+      socket.on('messages:mark-as-read', async (data) => {
+        try {
+          if (!socket.userId) return
+
+          const { senderId } = data
+
+          // Mark all messages from this sender as read
+          await prisma.message.updateMany({
+            where: {
+              senderId: senderId,
+              receiverId: socket.userId,
+              isRead: false,
+            },
+            data: {
+              isRead: true,
+            },
+          })
+
+          // Notify the sender that their messages have been read
+          io.to(`user:${senderId}`).emit('messages:read', {
+            readerId: socket.userId,
+            readerName: socket.username
+          })
+        } catch (error) {
+          console.error('Error marking messages as read:', error)
+          socket.emit('error', { message: 'Не удалось отметить сообщения как прочитанные' })
+        }
+      })
+
       // Handle joining chat rooms
       socket.on('chat:join', (chatId) => {
         socket.join(`chat:${chatId}`)

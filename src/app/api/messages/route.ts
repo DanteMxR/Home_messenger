@@ -40,6 +40,18 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'asc' },
         take: 50,
       })
+      
+      // Mark messages as read when fetched
+      await prisma.message.updateMany({
+        where: {
+          senderId: receiverId,
+          receiverId: authUser.userId,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+        },
+      })
     } else {
       return NextResponse.json({ error: 'Требуется receiverId или chatId' }, { status: 400 })
     }
