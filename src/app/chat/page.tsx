@@ -22,8 +22,13 @@ import {
   File,
   Image,
   Download,
-  Trash2
+  Trash2,
+  Smile
 } from 'lucide-react'
+
+// Add emoji picker imports
+import data from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
 
 interface User {
   id: string
@@ -67,6 +72,8 @@ export default function ChatPage() {
   // New state for clipboard image preview
   const [clipboardImage, setClipboardImage] = useState<{file: File, url: string} | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  // New state for emoji picker
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   
   // Get socket from global instance since it's managed by AuthContext
   const socket = getSocket()
@@ -153,6 +160,20 @@ export default function ChatPage() {
       };
     }
   }, [selectedUser, user, clipboardImage]);
+
+  // Click outside handler to close emoji picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showEmojiPicker && !(event.target as Element).closest('.emoji-picker-container')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   const fetchUsers = async () => {
     try {
@@ -287,6 +308,12 @@ export default function ChatPage() {
       URL.revokeObjectURL(clipboardImage.url);
       setClipboardImage(null);
     }
+  };
+
+  const addEmoji = (emoji: { native: string }) => {
+    setMessageText(prev => prev + emoji.native);
+    // Don't close the picker automatically - let it close only when user clicks outside
+    // setShowEmojiPicker(false);
   };
 
   const clearMessages = async () => {
@@ -575,7 +602,7 @@ export default function ChatPage() {
             </div>
 
             {/* Message input */}
-            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0">
+            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 relative">
               {/* Clipboard image preview */}
               {clipboardImage && (
                 <div className="mb-4 p-3 bg-gray-100 rounded-lg">
@@ -608,35 +635,65 @@ export default function ChatPage() {
               )}
               
               <div className="flex items-center space-x-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  disabled={isUploading || !!clipboardImage}
-                />
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={triggerFileSelect}
-                  disabled={isUploading || !!clipboardImage}
-                  className="flex-shrink-0"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
                 <Input
                   ref={messageInputRef}
-                  placeholder="Введите сообщение... (Ctrl+V для предварительного просмотра изображения)"
+                  placeholder="Введите сообщение..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   onKeyPress={handleKeyPress}
                   className="flex-1"
                   disabled={isUploading || !!clipboardImage}
                 />
-                <Button onClick={sendMessage} disabled={!messageText.trim() || isUploading || !!clipboardImage} className="flex-shrink-0">
-                  <Send className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    disabled={isUploading || !!clipboardImage}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={triggerFileSelect}
+                    disabled={isUploading || !!clipboardImage}
+                    className="flex-shrink-0"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="flex-shrink-0"
+                  >
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={sendMessage} disabled={!messageText.trim() || isUploading || !!clipboardImage} className="flex-shrink-0">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              
+              {/* Emoji picker */}
+              {showEmojiPicker && (
+                <div className="absolute bottom-full right-0 mb-2 z-10 emoji-picker-container">
+                  <div>
+                    <Picker 
+                      data={data} 
+                      onEmojiSelect={addEmoji} 
+                      theme="light"
+                      perLine={8}
+                      emojiSize={24}
+                      emojiButtonSize={32}
+                      navPosition="bottom"
+                      previewPosition="none"
+                      skinTonePosition="none"
+                    />
+                  </div>
+                </div>
+              )}
+              
               {isUploading && (
                 <p className="text-sm text-gray-500 mt-2">Загрузка файла...</p>
               )}
