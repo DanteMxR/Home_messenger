@@ -262,7 +262,6 @@ npx prisma migrate reset
    npm run build
    npm run start
    ```
-
 4. Другие устройства в сети смогут подключиться по адресу:
    `http://YOUR_IP_ADDRESS:3000`
 
@@ -280,29 +279,6 @@ npx prisma migrate reset
 | `JWT_SECRET` | Секретный ключ для JWT токенов | `your-secret-key` |
 | `NEXTAUTH_URL` | Базовый URL приложения | `http://localhost:3000` |
 | `NEXTAUTH_SECRET` | Секретный ключ для NextAuth | `your-nextauth-secret` |
-
-## 🤝 Участие в разработке
-
-1. Форкните репозиторий
-2. Создайте ветку для новой функции: `git checkout -b feature/amazing-feature`
-3. Внесите изменения и зафиксируйте их: `git commit -m 'Add amazing feature'`
-4. Отправьте в ветку: `git push origin feature/amazing-feature`
-5. Откройте Pull Request
-
-## 📝 Лицензия
-
-Этот проект распространяется под лицензией MIT. Подробности в файле [LICENSE](LICENSE).
-
-## 👥 Авторы
-
-- **Имя автора** - *Начальная работа* - [Профиль](https://github.com/username)
-
-## 🙏 Благодарности
-
-- Next.js команде за отличный фреймворк
-- Prisma за удобную работу с базой данных
-- Socket.IO за real-time функциональность
-- shadcn/ui за красивые компоненты
 
 ---
 
