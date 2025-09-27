@@ -1,0 +1,9 @@
+// Export all chat components
+export { ChatSidebar } from './ChatSidebar'
+export { ChatHeader } from './ChatHeader'
+export { MessageList } from './MessageList'
+export { MessageInput } from './MessageInput'
+export { UserProfile } from './UserProfile'
+export { SettingsDialog } from './SettingsDialog'
+export { EmptyState } from './EmptyState'
+export { ClearConfirmDialog } from './ClearConfirmDialog'
