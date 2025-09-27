@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { getSocket } from '@/hooks/useSocket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +11,25 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { 
   Send, 
   Search, 
@@ -23,7 +43,9 @@ import {
   Image,
   Download,
   Trash2,
-  Smile
+  Smile,
+  Settings,
+  ChevronDown
 } from 'lucide-react'
 
 // Add emoji picker imports
@@ -73,6 +95,7 @@ interface ChatUser extends User {
 
 export default function ChatPage() {
   const { user, logout, isConnected } = useAuth()
+  const { theme, setTheme } = useTheme()
   const [users, setUsers] = useState<ChatUser[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -87,6 +110,14 @@ export default function ChatPage() {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   // New state for emoji picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  // Settings dialog state
+  const [showSettings, setShowSettings] = useState(false)
+  const [settings, setSettings] = useState({
+    username: user?.username || '',
+    notifications: true,
+    darkMode: theme === 'dark',
+    soundEnabled: true,
+  })
   
   // Get socket from global instance since it's managed by AuthContext
   const socket = getSocket()
@@ -162,6 +193,24 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Update settings when user changes
+  useEffect(() => {
+    if (user) {
+      setSettings(prev => ({
+        ...prev,
+        username: user.username
+      }))
+    }
+  }, [user])
+
+  // Sync settings with theme context
+  useEffect(() => {
+    setSettings(prev => ({
+      ...prev,
+      darkMode: theme === 'dark'
+    }))
+  }, [theme])
 
   // Clipboard paste listener
   useEffect(() => {
@@ -459,6 +508,32 @@ export default function ChatPage() {
     setShowClearConfirm(false);
   };
 
+  const handleSettingsChange = (key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }))
+    
+    // Handle dark mode change immediately
+    if (key === 'darkMode') {
+      setTheme(value ? 'dark' : 'light')
+    }
+  }
+
+  const saveSettings = async () => {
+    try {
+      // Apply theme setting to ThemeContext
+      setTheme(settings.darkMode ? 'dark' : 'light')
+      
+      // Here you would typically save settings to backend
+      console.log('Saving settings:', settings)
+      // For now, just close the dialog
+      setShowSettings(false)
+    } catch (error) {
+      console.error('Error saving settings:', error)
+    }
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -512,57 +587,135 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+      <div className="w-80 bg-card border-r border-border flex flex-col flex-shrink-0">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold flex items-center text-gray-800">
-              <MessageCircle className="mr-2 h-6 w-6 text-blue-600" />
+            <h1 className="text-xl font-bold flex items-center text-foreground">
+              <MessageCircle className="mr-2 h-6 w-6 text-primary" />
               Мессенджер
             </h1>
             <div className="flex items-center space-x-2">
               <Badge variant={isConnected ? "default" : "destructive"} className="text-xs py-1 px-2">
                 {isConnected ? 'Онлайн' : 'Оффлайн'}
               </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <LogOut className="h-4 w-4 text-gray-600" />
-              </Button>
             </div>
           </div>
           
           {/* User info */}
-          <div className="flex items-center space-x-3 mb-4 flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-100">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="text-lg font-semibold bg-blue-100 text-blue-800">{user?.username.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{user?.username}</p>
-              <p className="text-sm text-gray-600">Пользователь</p>
-            </div>
+          <div className="flex items-center space-x-3 mb-4 flex-shrink-0 bg-muted p-3 rounded-xl border border-border">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center space-x-3 w-full hover:bg-accent rounded-lg p-2 transition-colors">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+                      {user?.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-foreground">{user?.username}</p>
+                    <p className="text-sm text-muted-foreground">Пользователь</p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start">
+                <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowSettings(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Настройки</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Выйти</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Поиск пользователей..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 py-2 rounded-lg bg-gray-100 border-0 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+              className="pl-10 py-2 rounded-lg border-0 focus:ring-2 focus:ring-ring transition-all"
             />
           </div>
         </div>
 
+        {/* Settings Dialog */}
+        <Dialog open={showSettings} onOpenChange={setShowSettings}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Настройки аккаунта</DialogTitle>
+              <DialogDescription>
+                Измените настройки своего аккаунта и уведомлений.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="username" className="text-right">
+                  Имя пользователя
+                </Label>
+                <Input
+                  id="username"
+                  value={settings.username}
+                  onChange={(e) => handleSettingsChange('username', e.target.value)}
+                  className="col-span-3"
+                  placeholder="Введите имя пользователя"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="notifications" className="text-sm font-medium">
+                  Уведомления
+                </Label>
+                <Switch
+                  id="notifications"
+                  checked={settings.notifications}
+                  onCheckedChange={(checked) => handleSettingsChange('notifications', checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="darkMode" className="text-sm font-medium">
+                  Темная тема
+                </Label>
+                <Switch
+                  id="darkMode"
+                  checked={settings.darkMode}
+                  onCheckedChange={(checked) => handleSettingsChange('darkMode', checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="soundEnabled" className="text-sm font-medium">
+                  Звуковые уведомления
+                </Label>
+                <Switch
+                  id="soundEnabled"
+                  checked={settings.soundEnabled}
+                  onCheckedChange={(checked) => handleSettingsChange('soundEnabled', checked)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSettings(false)}>
+                Отмена
+              </Button>
+              <Button onClick={saveSettings}>
+                Сохранить изменения
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Users list */}
         <div className="flex-1 overflow-hidden">
-          <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <div className="px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Контакты
           </div>
           <ScrollArea className="h-full px-2">
@@ -572,19 +725,19 @@ export default function ChatPage() {
                   key={user.id}
                   className={`mb-1 rounded-xl p-3 cursor-pointer transition-all duration-200 ${
                     selectedUser?.id === user.id 
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-sm' 
-                      : 'hover:bg-gray-50 border border-transparent'
+                      ? 'bg-accent border border-border shadow-sm' 
+                      : 'hover:bg-accent/50 border border-transparent'
                   }`}
                   onClick={() => setSelectedUser(user)}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="relative flex-shrink-0">
                       <Avatar className="h-12 w-12">
-                        <AvatarFallback className="font-medium bg-gray-200 text-gray-700">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="font-medium bg-muted text-muted-foreground">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <Circle 
-                        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
-                          user.isOnline ? 'text-green-500 fill-green-500 shadow-sm' : 'text-gray-400 fill-gray-400'
+                        className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${
+                          user.isOnline ? 'text-green-500 fill-green-500 shadow-sm' : 'text-muted-foreground fill-muted-foreground'
                         }`} 
                       />
                       {user.unreadCount > 0 && (
@@ -598,15 +751,15 @@ export default function ChatPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
-                        <p className="font-semibold text-gray-900 truncate">{user.username}</p>
+                        <p className="font-semibold text-foreground truncate">{user.username}</p>
                         {user.lastMessage && (
-                          <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                             {formatTime(user.lastMessage.createdAt)}
                           </span>
                         )}
                       </div>
                       <div className="flex justify-between items-center mt-1">
-                        <p className={`text-sm truncate ${user.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                        <p className={`text-sm truncate ${user.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                           {getLastMessagePreview(user)}
                         </p>
                         {user.isOnline ? (
@@ -617,7 +770,7 @@ export default function ChatPage() {
                         ) : null}
                       </div>
                       {!user.isOnline && user.lastMessage && (
-                        <p className="text-xs text-gray-500 mt-1 flex items-center">
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center">
                           <Clock className="mr-1 h-3 w-3" />
                           {formatLastSeen(user.lastSeen)}
                         </p>
@@ -636,7 +789,7 @@ export default function ChatPage() {
         {selectedUser ? (
           <>
             {/* Chat header */}
-            <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+            <div className="bg-card border-b border-border p-4 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
@@ -650,8 +803,8 @@ export default function ChatPage() {
                     />
                   </div>
                   <div>
-                    <h2 className="font-semibold">{selectedUser.username}</h2>
-                    <p className="text-sm text-gray-500">
+                    <h2 className="font-semibold text-foreground">{selectedUser.username}</h2>
+                    <p className="text-sm text-muted-foreground">
                       {selectedUser.isOnline ? 'В сети' : `Был(а) в сети ${formatLastSeen(selectedUser.lastSeen)}`}
                     </p>
                   </div>
@@ -672,9 +825,9 @@ export default function ChatPage() {
             {/* Confirmation dialog for clearing messages */}
             {showClearConfirm && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <h3 className="text-lg font-semibold mb-4">Очистить историю сообщений</h3>
-                  <p className="text-gray-600 mb-6">
+                <div className="bg-card rounded-lg p-6 w-full max-w-md">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Очистить историю сообщений</h3>
+                  <p className="text-muted-foreground mb-6">
                     Вы уверены, что хотите очистить всю историю сообщений с пользователем {selectedUser?.username}?
                     Это действие нельзя отменить.
                   </p>
@@ -710,8 +863,8 @@ export default function ChatPage() {
                       <div
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                           message.senderId === user?.id
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 text-gray-900'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
                         } ${message.fileName && message.fileUrl && isImageFile(message.fileType) ? '!max-w-full' : ''}`}
                       >
                         {/* File attachment */}
@@ -728,14 +881,14 @@ export default function ChatPage() {
                               </div>
                             ) : (
                               // File attachment
-                              <div className="flex items-center p-2 bg-gray-100 rounded mb-2">
-                                <File className="h-5 w-5 mr-2 text-gray-500 flex-shrink-0" />
+                              <div className="flex items-center p-2 bg-accent rounded mb-2">
+                                <File className="h-5 w-5 mr-2 text-muted-foreground flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium truncate">{message.fileName}</p>
-                                  <p className="text-xs text-gray-500">{formatFileSize(message.fileSize || 0)}</p>
+                                  <p className="text-sm font-medium truncate text-foreground">{message.fileName}</p>
+                                  <p className="text-xs text-muted-foreground">{formatFileSize(message.fileSize || 0)}</p>
                                 </div>
                                 <a href={message.fileUrl} download={message.fileName} target="_blank" rel="noopener noreferrer">
-                                  <Download className="h-4 w-4 text-gray-500 hover:text-gray-700 flex-shrink-0" />
+                                  <Download className="h-4 w-4 text-muted-foreground hover:text-foreground flex-shrink-0" />
                                 </a>
                               </div>
                             )}
@@ -749,7 +902,7 @@ export default function ChatPage() {
                         
                         <p
                           className={`text-xs mt-1 ${
-                            message.senderId === user?.id ? 'text-blue-100' : 'text-gray-500'
+                            message.senderId === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
                           }`}
                         >
                           {formatTime(message.createdAt)}
@@ -763,12 +916,12 @@ export default function ChatPage() {
             </div>
 
             {/* Message input */}
-            <div className="bg-white border-t border-gray-200 p-4 flex-shrink-0 relative">
+            <div className="bg-card border-t border-border p-4 flex-shrink-0 relative">
               {/* Clipboard image preview */}
               {clipboardImage && (
-                <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+                <div className="mb-4 p-3 bg-muted rounded-lg">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-gray-700">Предварительный просмотр изображения</span>
+                    <span className="text-sm font-medium text-foreground">Предварительный просмотр изображения</span>
                     <div>
                       <Button 
                         size="sm" 
@@ -856,18 +1009,18 @@ export default function ChatPage() {
               )}
               
               {isUploading && (
-                <p className="text-sm text-gray-500 mt-2">Загрузка файла...</p>
+                <p className="text-sm text-muted-foreground mt-2">Загрузка файла...</p>
               )}
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center bg-background">
             <div className="text-center">
-              <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Выберите пользователя
               </h3>
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 Выберите пользователя из списка слева, чтобы начать общение
               </p>
             </div>
