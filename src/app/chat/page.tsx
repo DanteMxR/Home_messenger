@@ -7,7 +7,7 @@ import { getSocket } from '@/hooks/useSocket'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -45,7 +45,9 @@ import {
   Trash2,
   Smile,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  Camera
 } from 'lucide-react'
 
 // Add emoji picker imports
@@ -94,7 +96,7 @@ interface ChatUser extends User {
 }
 
 export default function ChatPage() {
-  const { user, logout, isConnected } = useAuth()
+  const { user, logout, isConnected, refreshUser } = useAuth()
   const { theme, setTheme } = useTheme()
   const [users, setUsers] = useState<ChatUser[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -118,6 +120,10 @@ export default function ChatPage() {
     darkMode: theme === 'dark',
     soundEnabled: true,
   })
+  // Avatar upload state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
   
   // Get socket from global instance since it's managed by AuthContext
   const socket = getSocket()
@@ -525,12 +531,113 @@ export default function ChatPage() {
       // Apply theme setting to ThemeContext
       setTheme(settings.darkMode ? 'dark' : 'light')
       
-      // Here you would typically save settings to backend
+      // Update username if changed
+      if (settings.username !== user?.username) {
+        const response = await fetch('/api/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: settings.username }),
+        })
+        
+        if (response.ok) {
+          await refreshUser()
+        } else {
+          const errorData = await response.json()
+          console.error('Failed to update username:', errorData.error)
+          return
+        }
+      }
+      
+      // Here you would typically save other settings to backend
       console.log('Saving settings:', settings)
       // For now, just close the dialog
       setShowSettings(false)
     } catch (error) {
       console.error('Error saving settings:', error)
+    }
+  }
+
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        alert('Пожалуйста, выберите изображение')
+        return
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Размер файла не должен превышать 5MB')
+        return
+      }
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+      
+      // Upload avatar
+      uploadAvatar(file)
+    }
+  }
+
+  const uploadAvatar = async (file: File) => {
+    setIsUploadingAvatar(true)
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      
+      const response = await fetch('/api/avatar', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (response.ok) {
+        await refreshUser()
+        setAvatarPreview(null)
+      } else {
+        const errorData = await response.json()
+        console.error('Avatar upload failed:', errorData.error)
+        alert('Ошибка загрузки аватара: ' + errorData.error)
+        setAvatarPreview(null)
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      alert('Ошибка загрузки аватара')
+      setAvatarPreview(null)
+    } finally {
+      setIsUploadingAvatar(false)
+      // Reset file input
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = ''
+      }
+    }
+  }
+
+  const removeAvatar = async () => {
+    setIsUploadingAvatar(true)
+    try {
+      const response = await fetch('/api/avatar', {
+        method: 'DELETE',
+      })
+      
+      if (response.ok) {
+        await refreshUser()
+      } else {
+        const errorData = await response.json()
+        console.error('Avatar removal failed:', errorData.error)
+        alert('Ошибка удаления аватара: ' + errorData.error)
+      }
+    } catch (error) {
+      console.error('Avatar removal error:', error)
+      alert('Ошибка удаления аватара')
+    } finally {
+      setIsUploadingAvatar(false)
     }
   }
 
@@ -610,9 +717,13 @@ export default function ChatPage() {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center space-x-3 w-full hover:bg-accent rounded-lg p-2 transition-colors">
                   <Avatar className="h-12 w-12">
-                    <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
-                      {user?.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+                    {user?.avatar ? (
+                      <AvatarImage src={user.avatar} alt={user.username} />
+                    ) : (
+                      <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+                        {user?.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                   <div className="flex-1 text-left">
                     <p className="font-semibold text-foreground">{user?.username}</p>
@@ -659,17 +770,77 @@ export default function ChatPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="username" className="text-right">
-                  Имя пользователя
-                </Label>
-                <Input
-                  id="username"
-                  value={settings.username}
-                  onChange={(e) => handleSettingsChange('username', e.target.value)}
-                  className="col-span-3"
-                  placeholder="Введите имя пользователя"
-                />
+              {/* Avatar Upload Section */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-20 w-20">
+                    {avatarPreview ? (
+                      <AvatarImage src={avatarPreview} alt="Avatar preview" />
+                    ) : user?.avatar ? (
+                      <AvatarImage src={user.avatar} alt={user.username} />
+                    ) : (
+                      <AvatarFallback className="text-2xl font-semibold bg-primary/10 text-primary">
+                        {user?.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={avatarInputRef}
+                    onChange={handleAvatarSelect}
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isUploadingAvatar}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    {"Загрузить"}
+                  </Button>
+                  {user?.avatar && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={removeAvatar}
+                      disabled={isUploadingAvatar}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {"Удалить"}
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Максимальный размер: 5MB<br/>
+                  Поддерживаемые форматы: JPG, PNG, GIF
+                </p>
+              </div>
+              
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="username" className="text-right">
+                    Имя пользователя
+                  </Label>
+                  <Input
+                    id="username"
+                    value={settings.username}
+                    onChange={(e) => handleSettingsChange('username', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Введите имя пользователя"
+                  />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="notifications" className="text-sm font-medium">
@@ -733,7 +904,11 @@ export default function ChatPage() {
                   <div className="flex items-center space-x-3">
                     <div className="relative flex-shrink-0">
                       <Avatar className="h-12 w-12">
-                        <AvatarFallback className="font-medium bg-muted text-muted-foreground">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        {user.avatar ? (
+                          <AvatarImage src={user.avatar} alt={user.username} />
+                        ) : (
+                          <AvatarFallback className="font-medium bg-muted text-muted-foreground">{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        )}
                       </Avatar>
                       <Circle 
                         className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card ${
@@ -794,7 +969,11 @@ export default function ChatPage() {
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <Avatar>
-                      <AvatarFallback>{selectedUser.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      {selectedUser.avatar ? (
+                        <AvatarImage src={selectedUser.avatar} alt={selectedUser.username} />
+                      ) : (
+                        <AvatarFallback>{selectedUser.username.charAt(0).toUpperCase()}</AvatarFallback>
+                      )}
                     </Avatar>
                     <Circle 
                       className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${

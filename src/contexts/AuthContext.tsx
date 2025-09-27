@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>
   register: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
   loading: boolean
   error: string | null
   isConnected: boolean
@@ -163,12 +164,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const refreshUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error)
+    }
+  }
+
   const value: AuthContextType = {
     user,
     token,
     login,
     register,
     logout,
+    refreshUser,
     loading,
     error,
     isConnected,
