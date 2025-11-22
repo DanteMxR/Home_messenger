@@ -120,3 +120,46 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile optimizations */
+@media (max-width: 767px) {
+  /* Ensure proper sizing on mobile */
+  html {
+    font-size: 14px;
+  }
+  
+  /* Optimize emoji picker for mobile */
+  .emoji-picker-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .emoji-picker-container > div {
+    max-width: 100% !important;
+  }
+  
+  /* Adjust input fields for better mobile experience */
+  input, textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  /* Optimize chat sidebar for mobile overlay */
+  .chat-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Optimize message bubbles for mobile */
+  .message-bubble {
+    max-width: 85%;
+  }
+}

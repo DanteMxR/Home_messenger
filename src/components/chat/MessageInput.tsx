@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Paperclip, Send, Smile } from 'lucide-react'
+import { Paperclip, Send, Smile, X } from 'lucide-react'
 import { ClipboardImagePreview } from '@/types'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
@@ -59,6 +59,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const addEmoji = (emoji: { native: string }) => {
     onMessageChange(messageText + emoji.native)
+    // Close emoji picker after selecting an emoji on mobile
+    if (window.innerWidth < 768) {
+      setShowEmojiPicker(false)
+    }
   }
 
   const canSend = messageText.trim() && !isUploading && !clipboardImage
@@ -70,15 +74,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <div className="mb-4 p-3 bg-muted rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-foreground">Предварительный просмотр изображения</span>
-            <div>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={onCancelClipboardImage}
-                className="mr-2"
-              >
-                Отмена
-              </Button>
+            <Button 
+              size="icon" 
+              variant="ghost"
+              onClick={onCancelClipboardImage}
+              className="h-6 w-6"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <img 
+              src={clipboardImage.url} 
+              alt="Clipboard preview" 
+              className="max-h-32 max-w-full rounded object-contain"
+            />
+            <div className="flex flex-col space-y-2">
               <Button 
                 size="sm" 
                 onClick={onSendClipboardImage}
@@ -86,13 +97,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               >
                 Отправить
               </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onCancelClipboardImage}
+              >
+                Отмена
+              </Button>
             </div>
           </div>
-          <img 
-            src={clipboardImage.url} 
-            alt="Clipboard preview" 
-            className="max-h-32 max-w-full rounded object-contain"
-          />
         </div>
       )}
       
@@ -143,7 +156,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {/* Emoji picker */}
       {showEmojiPicker && (
         <div className="absolute bottom-full right-0 mb-2 z-10 emoji-picker-container">
-          <div>
+          <div className="md:max-w-xs max-w-[calc(100vw-2rem)]">
             <Picker 
               data={data} 
               onEmojiSelect={addEmoji} 
@@ -154,6 +167,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               navPosition="bottom"
               previewPosition="none"
               skinTonePosition="none"
+              maxFrequentRows={2}
             />
           </div>
         </div>

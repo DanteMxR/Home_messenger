@@ -2,23 +2,37 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Circle, Trash2 } from 'lucide-react'
+import { Circle, Trash2, ArrowLeft } from 'lucide-react'
 import { User } from '@/types'
 import { formatLastSeen, getUserInitials } from '@/utils'
 
 interface ChatHeaderProps {
   selectedUser: User
   onClearMessages: () => void
+  onBack?: () => void
+  isMobile?: boolean
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   selectedUser,
-  onClearMessages
+  onClearMessages,
+  onBack,
+  isMobile = false
 }) => {
   return (
     <div className="bg-card border-b border-border p-4 flex-shrink-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
+          {isMobile && onBack && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={onBack}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           <div className="relative">
             <Avatar>
               {selectedUser.avatar ? (

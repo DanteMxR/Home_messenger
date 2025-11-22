@@ -4,18 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, MessageCircle, Circle, Clock } from 'lucide-react'
+import { Search, MessageCircle, Circle, Clock, X } from 'lucide-react'
 import { ChatUser, User } from '@/types'
 import { formatTime, formatLastSeen, getLastMessagePreview, getUserInitials } from '@/utils'
-
-interface ChatSidebarProps {
-  users: ChatUser[]
-  selectedUser: User | null
-  searchTerm: string
-  onUserSelect: (user: User) => void
-  onSearchChange: (term: string) => void
-  isConnected: boolean
-}
+import { Button } from '@/components/ui/button'
 
 interface ChatSidebarProps {
   users: ChatUser[]
@@ -25,6 +17,8 @@ interface ChatSidebarProps {
   onSearchChange: (term: string) => void
   isConnected: boolean
   children?: React.ReactNode // For user profile section
+  onClose?: () => void // For mobile close functionality
+  isMobile?: boolean // To determine if we're on mobile
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -34,7 +28,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onUserSelect,
   onSearchChange,
   isConnected,
-  children
+  children,
+  onClose,
+  isMobile = false
 }) => {
   return (
     <div className="flex flex-col h-full">
@@ -45,9 +41,21 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <MessageCircle className="mr-2 h-6 w-6 text-primary" />
             Мессенджер
           </h1>
-          <Badge variant={isConnected ? "default" : "destructive"} className="text-xs py-1 px-2">
-            {isConnected ? 'Онлайн' : 'Оффлайн'}
-          </Badge>
+          <div className="flex items-center space-x-2">
+            {isMobile && onClose && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onClose}
+                className="h-8 w-8"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
+            <Badge variant={isConnected ? "default" : "destructive"} className="text-xs py-1 px-2">
+              {isConnected ? 'Онлайн' : 'Оффлайн'}
+            </Badge>
+          </div>
         </div>
 
         {/* Search */}

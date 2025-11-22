@@ -426,3 +426,5 @@ export const useClipboardImage = (onImagePaste?: (file: File, url: string) => vo
     setClipboardImage
   }
 }
+
+export { useMobile } from './useMobile'
