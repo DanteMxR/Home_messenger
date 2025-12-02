@@ -118,8 +118,11 @@ export const createTempMessage = (
     fileSize: number
   }
 ): Message => {
+  // Generate a more unique ID using timestamp + random number
+  const uniqueId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  
   return {
-    id: 'temp-' + Date.now(),
+    id: uniqueId,
     content,
     senderId,
     receiverId,

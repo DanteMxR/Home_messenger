@@ -82,20 +82,28 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([])
   const [isUploading, setIsUploading] = useState(false)
 
-  // Fetch messages when selected user changes
-  useEffect(() => {
+  const refreshMessages = useCallback(async () => {
     if (!selectedUser) {
       setMessages([])
       return
     }
 
-    const loadMessages = async () => {
+    // Clear messages immediately for visual feedback
+    setMessages([])
+    
+    try {
       const messageList = await ChatService.fetchMessages(selectedUser.id)
       setMessages(messageList)
+    } catch (error) {
+      console.error('Error refreshing messages:', error)
+      setMessages([])
     }
-
-    loadMessages()
   }, [selectedUser])
+
+  // Fetch messages when selected user changes
+  useEffect(() => {
+    refreshMessages()
+  }, [refreshMessages])
 
   const sendMessage = useCallback((content: string) => {
     if (!selectedUser || !user || isEmptyOrWhitespace(content)) {
@@ -177,11 +185,21 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
         })
       } else {
         // Remove temp message on error
-        setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
+        setMessages(prev => {
+          const updatedMessages = prev.filter(m => m.id !== tempMessage.id)
+          // Clean up ObjectURL
+          cleanupObjectURL(tempMessage.fileUrl!)
+          return updatedMessages
+        })
       }
     } catch (error) {
       console.error('File upload error:', error)
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
+      setMessages(prev => {
+        const updatedMessages = prev.filter(m => m.id !== tempMessage.id)
+        // Clean up ObjectURL
+        cleanupObjectURL(tempMessage.fileUrl!)
+        return updatedMessages
+      })
     } finally {
       setIsUploading(false)
     }
@@ -196,32 +214,78 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
     }
   }, [selectedUser])
 
+  const deleteMessage = useCallback(async (messageId: string) => {
+    try {
+      const success = await ChatService.deleteMessage(messageId)
+      if (success) {
+        // Remove the message from the local state
+        setMessages(prev => prev.filter(msg => msg.id !== messageId))
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Error deleting message:', error)
+      return false
+    }
+  }, [])
+
+  const editMessage = useCallback(async (messageId: string, content: string) => {
+    try {
+      const updatedMessage = await ChatService.editMessage(messageId, content)
+      if (updatedMessage) {
+        // Update the message in the local state
+        setMessages(prev => 
+          prev.map(msg => msg.id === messageId ? updatedMessage : msg)
+        )
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Error editing message:', error)
+      return false
+    }
+  }, [])
+
   // Socket event listeners
   useEffect(() => {
     const socket = getSocket()
     if (!socket || !user) return
 
-    const cleanup = SocketService.setupMessageListeners(
-      socket,
-      (message: Message) => {
+    const handleMessageReceive = (message: Message) => {
+      // Only process messages for the currently selected user
+      if (selectedUser && (message.senderId === selectedUser.id || message.receiverId === selectedUser.id)) {
         setMessages(prev => {
           // Check if this is a response to a temporary message we sent
           const isTemporary = message.senderId === user.id && 
-            prev.some(m => m.id.startsWith('temp-') && m.content === message.content);
+            prev.some(m => m.id.startsWith('temp-') && 
+              ((m.content && m.content === message.content) || 
+               (m.fileName && m.fileName === message.fileName)));
           
           if (isTemporary) {
             // Replace the temporary message with the actual one
-            return prev.map(m => 
-              m.id.startsWith('temp-') && m.content === message.content 
-                ? message 
-                : m
-            );
+            return prev.map(m => {
+              if (m.id.startsWith('temp-') && 
+                  ((m.content && m.content === message.content) || 
+                   (m.fileName && m.fileName === message.fileName))) {
+                // Clean up ObjectURL if it was a file message
+                if (m.fileUrl && m.fileUrl.startsWith('blob:')) {
+                  cleanupObjectURL(m.fileUrl)
+                }
+                return message
+              }
+              return m
+            });
           } else {
             // Add new received message
             return [...prev, message];
           }
         });
-      },
+      }
+    };
+
+    const cleanup = SocketService.setupMessageListeners(
+      socket,
+      handleMessageReceive,
       () => {
         // Messages marked as read - handled by parent component
       },
@@ -234,14 +298,17 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
     )
 
     return cleanup
-  }, [user])
+  }, [user, selectedUser])
 
   return {
     messages,
     sendMessage,
     sendFileMessage,
     clearMessages,
-    isUploading
+    isUploading,
+    refreshMessages,
+    deleteMessage, // Add delete function to the return object
+    editMessage    // Add edit function to the return object
   }
 }
 

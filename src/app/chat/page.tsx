@@ -41,7 +41,10 @@ export default function ChatPage() {
     sendMessage,
     sendFileMessage,
     clearMessages,
-    isUploading
+    isUploading,
+    refreshMessages,
+    deleteMessage,
+    editMessage
   } = useMessages(selectedUser)
 
   const {
@@ -99,10 +102,17 @@ export default function ChatPage() {
   }
 
   const handleUserSelect = (user: User) => {
-    setSelectedUser(user)
+    if (selectedUser && selectedUser.id === user.id) {
+      // If selecting the same user, just refresh messages
+      refreshMessages();
+    } else {
+      // If selecting a different user, update the selected user
+      setSelectedUser(user);
+    }
+    
     // Close sidebar on mobile after selecting a user
     if (isMobile) {
-      setSidebarOpen(false)
+      setSidebarOpen(false);
     }
   }
 
@@ -191,6 +201,8 @@ export default function ChatPage() {
             <MessageList
               messages={messages}
               currentUser={user}
+              onDeleteMessage={deleteMessage}
+              onEditMessage={editMessage}
             />
 
             {/* Message Input */}

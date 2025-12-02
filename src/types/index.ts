@@ -17,6 +17,7 @@ export interface Message {
   chatId?: string
   isRead: boolean
   createdAt: Date
+  updatedAt?: Date
   sender: {
     id: string
     username: string
@@ -147,6 +148,9 @@ export interface UseMessagesReturn {
   sendFileMessage: (file: File) => void
   clearMessages: () => Promise<void>
   isUploading: boolean
+  refreshMessages: () => Promise<void>
+  deleteMessage: (messageId: string) => Promise<boolean>
+  editMessage: (messageId: string, content: string) => Promise<boolean>
 }
 
 export interface UseSettingsReturn {

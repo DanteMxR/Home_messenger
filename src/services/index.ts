@@ -81,6 +81,45 @@ export class ChatService {
       return false
     }
   }
+
+  /**
+   * Delete a specific message
+   */
+  static async deleteMessage(messageId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/messages/delete?messageId=${messageId}`, {
+        method: 'DELETE',
+      })
+      return response.ok
+    } catch (error) {
+      console.error('Error deleting message:', error)
+      return false
+    }
+  }
+
+  /**
+   * Edit a specific message
+   */
+  static async editMessage(messageId: string, content: string): Promise<Message | null> {
+    try {
+      const response = await fetch('/api/messages/edit', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId, content }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.message
+      }
+      return null
+    } catch (error) {
+      console.error('Error editing message:', error)
+      return null
+    }
+  }
 }
 
 /**
