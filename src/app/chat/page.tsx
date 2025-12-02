@@ -15,13 +15,14 @@ import {
 import { useChat, useMessages, useSettings, useClipboardImage, useMobile } from '@/hooks'
 import { User } from '@/types'
 import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ChatPage() {
   const { user, logout, isConnected } = useAuth()
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [messageText, setMessageText] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { isMobile } = useMobile()
 
   // Custom hooks for managing different aspects of the chat
@@ -126,7 +127,7 @@ export default function ChatPage() {
             ? `fixed inset-y-0 left-0 z-50 w-80 bg-card border-r border-border flex flex-col flex-shrink-0 transform transition-transform duration-300 ease-in-out ${
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               }`
-            : 'w-80 bg-card border-r border-border flex flex-col flex-shrink-0'
+            : `${sidebarCollapsed ? 'w-16' : 'w-80'} bg-card border-r border-border flex flex-col flex-shrink-0 transition-all duration-300`
         }`}
       >
         {/* Chat Sidebar with User Profile as children */}
@@ -139,6 +140,8 @@ export default function ChatPage() {
           isConnected={isConnected}
           onClose={() => setSidebarOpen(false)}
           isMobile={isMobile}
+          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          isCollapsed={sidebarCollapsed}
         >
           <UserProfile
             user={user}
@@ -155,7 +158,7 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className={`flex-1 flex flex-col min-w-0 relative ${!isMobile && sidebarCollapsed ? 'ml-16' : ''}`}>
         {/* Mobile header with menu button */}
         {isMobile && !selectedUser && (
           <div className="p-4 border-b border-border flex items-center">
