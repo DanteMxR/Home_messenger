@@ -2,12 +2,12 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Circle, Trash2, ArrowLeft } from 'lucide-react'
-import { User } from '@/types'
+import { Circle, Trash2, ArrowLeft, Users } from 'lucide-react'
+import { User, GroupChat } from '@/types'
 import { formatLastSeen, getUserInitials } from '@/utils'
 
 interface ChatHeaderProps {
-  selectedUser: User
+  selectedUser: User | GroupChat
   onClearMessages: () => void
   onBack?: () => void
   isMobile?: boolean
@@ -19,6 +19,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onBack,
   isMobile = false
 }) => {
+  // Check if it's a group chat
+  const isGroupChat = 'isGroup' in selectedUser && selectedUser.isGroup;
+
   return (
     <div className="bg-card border-b border-border p-4 flex-shrink-0">
       <div className="flex items-center justify-between">
@@ -35,23 +38,37 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           )}
           <div className="relative">
             <Avatar>
-              {selectedUser.avatar ? (
-                <AvatarImage src={selectedUser.avatar} alt={selectedUser.username} />
+              {isGroupChat ? (
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  <Users className="h-6 w-6" />
+                </AvatarFallback>
               ) : (
-                <AvatarFallback>{getUserInitials(selectedUser.username)}</AvatarFallback>
+                selectedUser.avatar ? (
+                  <AvatarImage src={selectedUser.avatar} alt={selectedUser.username} />
+                ) : (
+                  <AvatarFallback>{getUserInitials(selectedUser.username)}</AvatarFallback>
+                )
               )}
             </Avatar>
-            <Circle 
-              className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
-                selectedUser.isOnline ? 'text-green-500 fill-green-500' : 'text-gray-400 fill-gray-400'
-              }`} 
-            />
+            {!isGroupChat && (
+              <Circle 
+                className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
+                  selectedUser.isOnline ? 'text-green-500 fill-green-500' : 'text-gray-400 fill-gray-400'
+                }`} 
+              />
+            )}
           </div>
           <div>
-            <h2 className="font-semibold text-foreground">{selectedUser.username}</h2>
-            <p className="text-sm text-muted-foreground">
-              {selectedUser.isOnline ? 'В сети' : `Был(а) в сети ${formatLastSeen(selectedUser.lastSeen)}`}
-            </p>
+            <h2 className="font-semibold text-foreground">{isGroupChat ? selectedUser.name : selectedUser.username}</h2>
+            {isGroupChat ? (
+              <p className="text-sm text-muted-foreground">
+                {selectedUser.members.length} {selectedUser.members.length === 1 ? 'участник' : selectedUser.members.length < 5 ? 'участника' : 'участников'}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {selectedUser.isOnline ? 'В сети' : `Был(а) в сети ${formatLastSeen(selectedUser.lastSeen || new Date())}`}
+              </p>
+            )}
           </div>
         </div>
         

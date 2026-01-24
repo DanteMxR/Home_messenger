@@ -1,6 +1,7 @@
 // Service layer for API calls and business logic
 import { 
   ChatUser, 
+  GroupChat,
   Message, 
   Settings,
   ApiResponse,
@@ -17,7 +18,7 @@ export class ChatService {
   /**
    * Fetch chats with optional search
    */
-  static async fetchChats(searchTerm: string = ''): Promise<ChatUser[]> {
+  static async fetchChats(searchTerm: string = ''): Promise<(ChatUser | GroupChat)[]> {
     try {
       const response = await fetch(`/api/chats?search=${encodeURIComponent(searchTerm)}`)
       if (response.ok) {
@@ -32,11 +33,20 @@ export class ChatService {
   }
 
   /**
-   * Fetch messages for a specific user
+   * Fetch messages for a specific user or group chat
    */
-  static async fetchMessages(receiverId: string): Promise<Message[]> {
+  static async fetchMessages(receiverId: string = '', chatId: string = ''): Promise<Message[]> {
     try {
-      const response = await fetch(`/api/messages?receiverId=${receiverId}`)
+      let url = '/api/messages?';
+      if (receiverId) {
+        url += `receiverId=${receiverId}`;
+      } else if (chatId) {
+        url += `chatId=${chatId}`;
+      } else {
+        throw new Error('Either receiverId or chatId must be provided');
+      }
+      
+      const response = await fetch(url);
       if (response.ok) {
         const data: MessagesResponse = await response.json()
         return data.messages
@@ -131,13 +141,18 @@ export class FileService {
    */
   static async uploadFile(
     file: File, 
-    receiverId: string, 
+    receiverId: string = '', 
+    chatId: string = '',
     content: string = ''
   ): Promise<FileUploadResponse | null> {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('receiverId', receiverId)
+      if (receiverId) {
+        formData.append('receiverId', receiverId)
+      } else if (chatId) {
+        formData.append('chatId', chatId)
+      }
       formData.append('content', content)
 
       const response = await fetch('/api/upload', {
@@ -269,6 +284,17 @@ export class SocketService {
     })
   }
 
+  static sendGroupMessage(socket: any, content: string, chatId: string): void {
+    if (!socket?.connected) {
+      throw new Error('Socket not connected')
+    }
+    
+    socket.emit('message:send', {
+      content,
+      chatId,
+    })
+  }
+
   /**
    * Send a file message via socket
    */
@@ -277,6 +303,24 @@ export class SocketService {
     messageData: {
       content: string
       receiverId: string
+      fileName: string
+      fileUrl: string
+      fileType: string
+      fileSize: number
+    }
+  ): void {
+    if (!socket?.connected) {
+      throw new Error('Socket not connected')
+    }
+    
+    socket.emit('file:send', messageData)
+  }
+
+  static sendGroupFileMessage(
+    socket: any, 
+    messageData: {
+      content: string
+      chatId: string
       fileName: string
       fileUrl: string
       fileType: string

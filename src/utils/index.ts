@@ -109,7 +109,7 @@ export const createTempMessage = (
   content: string,
   senderId: string,
   senderUsername: string,
-  receiverId: string,
+  receiverId?: string,
   senderAvatar?: string | null,
   fileData?: {
     fileName: string
@@ -184,7 +184,8 @@ export const isEmptyOrWhitespace = (str: string): boolean => {
 /**
  * Generate user initials for avatar fallback
  */
-export const getUserInitials = (username: string): string => {
+export const getUserInitials = (username: string | undefined): string => {
+  if (!username) return '?';
   return username.charAt(0).toUpperCase()
 }
 

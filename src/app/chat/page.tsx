@@ -12,8 +12,9 @@ import {
   EmptyState,
   ClearConfirmDialog
 } from '@/components/chat'
+import { GroupChatDialog } from '@/components/chat/dialogs/GroupChatDialog'
 import { useChat, useMessages, useSettings, useClipboardImage, useMobile } from '@/hooks'
-import { User } from '@/types'
+import { User, ChatUser, GroupChat } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -23,6 +24,8 @@ export default function ChatPage() {
   const [messageText, setMessageText] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [showGroupDialog, setShowGroupDialog] = useState(false)
+  const [creatingGroup, setCreatingGroup] = useState(false)
   const { isMobile } = useMobile()
 
   // Custom hooks for managing different aspects of the chat
@@ -101,12 +104,40 @@ export default function ChatPage() {
     setShowClearConfirm(false)
   }
 
-  const handleUserSelect = (user: User) => {
+  const handleCreateGroup = async (name: string, userIds: string[]) => {
+    setCreatingGroup(true);
+    try {
+      const response = await fetch('/api/group-chats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, userIds: [...userIds, user!.id] }), // Add current user to the group
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Group created successfully:', result);
+        setShowGroupDialog(false);
+        await fetchChats(); // Refresh the chat list
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Ошибка при создании группы');
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('Ошибка при создании группы');
+    } finally {
+      setCreatingGroup(false);
+    }
+  }
+
+  const handleUserSelect = (user: User | GroupChat) => {
     if (selectedUser && selectedUser.id === user.id) {
-      // If selecting the same user, just refresh messages
+      // If selecting the same user/group, just refresh messages
       refreshMessages();
     } else {
-      // If selecting a different user, update the selected user
+      // If selecting a different user/group, update the selected user
       setSelectedUser(user);
     }
     
@@ -152,6 +183,7 @@ export default function ChatPage() {
           isMobile={isMobile}
           onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
+          onOpenGroupDialog={() => setShowGroupDialog(true)}
         >
           <UserProfile
             user={user}
@@ -244,6 +276,25 @@ export default function ChatPage() {
         username={selectedUser?.username || ''}
         onConfirm={handleClearMessages}
         onCancel={() => setShowClearConfirm(false)}
+      />
+
+      {/* Group Chat Dialog */}
+      <GroupChatDialog
+        open={showGroupDialog}
+        onOpenChange={setShowGroupDialog}
+        users={users.filter((chat): chat is ChatUser => {
+          // Type guard to check if chat is a ChatUser (not a GroupChat)
+          return !('isGroup' in chat);
+        }).map(({ id, username, avatar, isOnline, lastSeen, createdAt }) => ({
+          id,
+          username,
+          avatar,
+          isOnline,
+          lastSeen,
+          createdAt,
+        }))} // Only show direct chats/users, not groups
+        onCreateGroup={handleCreateGroup}
+        isLoading={creatingGroup}
       />
     </div>
   )

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
 
-    // Get all users except the current user
+    // Get all users except the current user (for direct chats)
     const users = await prisma.user.findMany({
       where: {
         AND: [
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Combine user data with last messages and unread counts
-    const chats = users.map(user => {
+    const directChats = users.map(user => {
       const lastMessage = lastMessagesMap[user.id] || null
       const unreadCount = unreadCountsMap[user.id] || 0
 
@@ -100,7 +100,97 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ chats })
+    // Get all group chats the user is a member of
+    const groupChats = await prisma.chat.findMany({
+      where: {
+        isGroup: true,
+        members: {
+          some: {
+            userId: authUser.userId
+          }
+        }
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                isOnline: true,
+                lastSeen: true
+              }
+            }
+          }
+        },
+        messages: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 1,
+          include: {
+            sender: {
+              select: {
+                username: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Get unread message counts for each group chat
+    const groupChatIds = groupChats.map(chat => chat.id);
+    const groupUnreadCounts = await prisma.message.groupBy({
+      by: ['chatId'],
+      where: {
+        chatId: {
+          in: groupChatIds
+        },
+        receiverId: null, // Group messages don't have a specific receiver
+        isRead: false,
+        NOT: {
+          senderId: authUser.userId // Exclude messages sent by current user
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    const groupUnreadCountsMap = Object.fromEntries(
+      groupUnreadCounts.map(count => [count.chatId, count._count.id])
+    );
+
+    // Format the group chats
+    const formattedGroupChats = groupChats.map(chat => {
+      const lastMessage = chat.messages.length > 0 ? {
+        id: chat.messages[0].id,
+        content: chat.messages[0].content,
+        senderId: chat.messages[0].senderId,
+        senderUsername: chat.messages[0].sender.username,
+        createdAt: chat.messages[0].createdAt,
+        fileName: chat.messages[0].fileName,
+        fileType: chat.messages[0].fileType
+      } : null;
+
+      return {
+        id: chat.id,
+        name: chat.name || 'Без названия',
+        isGroup: true,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        members: chat.members.map(member => member.user),
+        lastMessage,
+        unreadCount: groupUnreadCountsMap[chat.id] || 0
+      };
+    });
+
+    // Combine direct chats and group chats
+    const allChats = [...directChats, ...formattedGroupChats];
+
+    return NextResponse.json({ chats: allChats });
   } catch (error) {
     console.error('Get chats error:', error)
     return NextResponse.json({ error: 'Внутренняя ошибка сервера' }, { status: 500 })

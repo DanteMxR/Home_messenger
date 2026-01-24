@@ -6,6 +6,7 @@ import { getSocket } from '@/hooks/useSocket'
 import { 
   ChatUser, 
   User, 
+  GroupChat,
   Message, 
   Settings, 
   ClipboardImagePreview,
@@ -33,8 +34,8 @@ import {
  */
 export const useChat = (): UseChatReturn => {
   const { user, isConnected } = useAuth()
-  const [users, setUsers] = useState<ChatUser[]>([])
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [users, setUsers] = useState<(ChatUser | GroupChat)[]>([])
+  const [selectedUser, setSelectedUser] = useState<User | GroupChat | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
   const fetchChats = useCallback(async () => {
@@ -77,7 +78,7 @@ export const useChat = (): UseChatReturn => {
 /**
  * Hook for managing messages and message sending
  */
-export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
+export const useMessages = (selectedUser: User | GroupChat | null): UseMessagesReturn => {
   const { user, isConnected } = useAuth()
   const [messages, setMessages] = useState<Message[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -92,7 +93,15 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
     setMessages([])
     
     try {
-      const messageList = await ChatService.fetchMessages(selectedUser.id)
+      // Determine if it's a group chat or direct chat
+      let messageList: Message[];
+      if ((selectedUser as GroupChat).isGroup) {
+        // It's a group chat
+        messageList = await ChatService.fetchMessages('', (selectedUser as GroupChat).id);
+      } else {
+        // It's a direct chat
+        messageList = await ChatService.fetchMessages((selectedUser as User).id);
+      }
       setMessages(messageList)
     } catch (error) {
       console.error('Error refreshing messages:', error)
@@ -116,19 +125,27 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
       return
     }
 
+    const isGroupChat = (selectedUser as GroupChat).isGroup;
+    
     // Create temporary message for optimistic UI update
     const tempMessage = createTempMessage(
       content,
       user.id,
       user.username,
-      selectedUser.id,
+      isGroupChat ? undefined : (selectedUser as User).id, // receiverId for direct messages only
       user.avatar
     )
 
     setMessages(prev => [...prev, tempMessage])
 
     try {
-      SocketService.sendMessage(socket, content, selectedUser.id)
+      if (isGroupChat) {
+        // Send to group chat
+        SocketService.sendGroupMessage(socket, content, (selectedUser as GroupChat).id);
+      } else {
+        // Send to direct chat
+        SocketService.sendMessage(socket, content, (selectedUser as User).id);
+      }
     } catch (error) {
       console.error('Error sending message:', error)
       // Remove temp message on error
@@ -152,12 +169,14 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
       return
     }
 
+    const isGroupChat = (selectedUser as GroupChat).isGroup;
+    
     // Create temporary message for optimistic UI update
     const tempMessage = createTempMessage(
       '',
       user.id,
       user.username,
-      selectedUser.id,
+      isGroupChat ? undefined : (selectedUser as User).id, // receiverId for direct messages only
       user.avatar,
       {
         fileName: file.name,
@@ -171,18 +190,36 @@ export const useMessages = (selectedUser: User | null): UseMessagesReturn => {
     setIsUploading(true)
     
     try {
-      const uploadResult = await FileService.uploadFile(file, selectedUser.id, '')
+      let uploadResult;
+      if (isGroupChat) {
+        // Upload to group chat
+        uploadResult = await FileService.uploadFile(file, '', (selectedUser as GroupChat).id);
+      } else {
+        // Upload to direct chat
+        uploadResult = await FileService.uploadFile(file, (selectedUser as User).id, '');
+      }
       
       if (uploadResult) {
         // Send file message through socket
-        SocketService.sendFileMessage(socket, {
-          content: uploadResult.message.content,
-          receiverId: selectedUser.id,
-          fileName: uploadResult.message.fileName!,
-          fileUrl: uploadResult.message.fileUrl!,
-          fileType: uploadResult.message.fileType!,
-          fileSize: uploadResult.message.fileSize!,
-        })
+        if (isGroupChat) {
+          SocketService.sendGroupFileMessage(socket, {
+            content: uploadResult.message.content,
+            chatId: (selectedUser as GroupChat).id,
+            fileName: uploadResult.message.fileName!,
+            fileUrl: uploadResult.message.fileUrl!,
+            fileType: uploadResult.message.fileType!,
+            fileSize: uploadResult.message.fileSize!,
+          });
+        } else {
+          SocketService.sendFileMessage(socket, {
+            content: uploadResult.message.content,
+            receiverId: (selectedUser as User).id,
+            fileName: uploadResult.message.fileName!,
+            fileUrl: uploadResult.message.fileUrl!,
+            fileType: uploadResult.message.fileType!,
+            fileSize: uploadResult.message.fileSize!,
+          });
+        }
       } else {
         // Remove temp message on error
         setMessages(prev => {

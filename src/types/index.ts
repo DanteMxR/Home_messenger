@@ -43,6 +43,30 @@ export interface ChatUser extends User {
   unreadCount: number
 }
 
+export interface GroupChat {
+  id: string
+  name: string
+  isGroup: boolean
+  createdAt: Date
+  updatedAt: Date
+  members: User[]
+  lastMessage: {
+    id: string
+    content: string
+    senderId: string
+    senderUsername: string
+    createdAt: Date
+    fileName: string | null
+    fileType: string | null
+  } | null
+  unreadCount: number
+  // For compatibility with ChatUser interface
+  username?: string
+  avatar?: string | null
+  isOnline?: boolean
+  lastSeen?: Date
+}
+
 export interface Settings {
   username: string
   notifications: boolean
@@ -77,7 +101,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface ChatListResponse {
-  chats: ChatUser[]
+  chats: (ChatUser | GroupChat)[]
 }
 
 export interface MessagesResponse {
@@ -133,10 +157,10 @@ export interface ChatPageState {
 
 // Hook return types
 export interface UseChatReturn {
-  users: ChatUser[]
-  selectedUser: User | null
+  users: (ChatUser | GroupChat)[]
+  selectedUser: User | GroupChat | null
   searchTerm: string
-  setSelectedUser: (user: User | null) => void
+  setSelectedUser: (user: User | GroupChat | null) => void
   setSearchTerm: (term: string) => void
   fetchChats: () => Promise<void>
   markMessagesAsRead: (senderId: string) => Promise<void>

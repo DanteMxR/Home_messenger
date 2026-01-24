@@ -3,9 +3,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { File, Download, Edit, Trash2, Check, X } from 'lucide-react'
 import { Message, User } from '@/types'
-import { formatTime, formatFileSize, isImageFile } from '@/utils'
+import { formatTime, formatFileSize, isImageFile, getUserInitials } from '@/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface MessageListProps {
   messages: Message[]
@@ -92,6 +93,20 @@ export const MessageList: React.FC<MessageListProps> = ({
                 message.senderId === currentUser?.id ? 'justify-end' : 'justify-start'
               }`}
             >
+              {/* Show sender avatar for group messages */}
+              {message.chatId && message.senderId !== currentUser?.id && (
+                <div className="mr-2 flex-shrink-0">
+                  <Avatar className="h-6 w-6">
+                    {message.sender.avatar ? (
+                      <AvatarImage src={message.sender.avatar} alt={message.sender.username} />
+                    ) : (
+                      <AvatarFallback className="text-xs">
+                        {getUserInitials(message.sender.username)}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                </div>
+              )}
               <div
                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative cursor-pointer hover:opacity-90 ${
                   message.senderId === currentUser?.id
