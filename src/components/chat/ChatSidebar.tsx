@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, MessageCircle, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus } from 'lucide-react'
+import { Search, MessageCircle, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus, Shield } from 'lucide-react'
 import { ChatUser, User, GroupChat } from '@/types'
 import { formatTime, formatLastSeen, getLastMessagePreview, getUserInitials } from '@/utils'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ interface ChatSidebarProps {
   onCollapse?: () => void // For collapsing the sidebar
   isCollapsed?: boolean // To determine if sidebar is collapsed
   onOpenGroupDialog?: () => void // Callback to open group creation dialog
+  currentUser?: User // Current logged-in user
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -36,7 +37,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isMobile = false,
   onCollapse,
   isCollapsed = false,
-  onOpenGroupDialog
+  onOpenGroupDialog,
+  currentUser
 }) => {
   // Filter direct chats and group chats
   const directChats = users.filter(user => !(user as GroupChat).isGroup) as ChatUser[];
@@ -116,6 +118,18 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <Plus className="h-4 w-4 mr-2" />
               Создать группу
             </Button>
+            
+            {/* Admin Panel Link - only for admins */}
+            {currentUser?.isAdmin && (
+              <Button 
+                variant="outline" 
+                className="mt-2 w-full justify-start"
+                onClick={() => window.location.href = '/admin'}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Админ-панель
+              </Button>
+            )}
           </>
         )}
       </div>

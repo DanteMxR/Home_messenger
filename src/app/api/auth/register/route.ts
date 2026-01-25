@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         username: true,
         avatar: true,
         isOnline: true,
+        isAdmin: true,
         lastSeen: true,
         createdAt: true,
       }

@@ -184,6 +184,7 @@ export default function ChatPage() {
           onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
           onOpenGroupDialog={() => setShowGroupDialog(true)}
+          currentUser={user}
         >
           <UserProfile
             user={user}

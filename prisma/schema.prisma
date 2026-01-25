@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,31 +8,30 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  avatar    String?
-  isOnline  Boolean  @default(false)
-  lastSeen  DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sentMessages     Message[] @relation("UserSentMessages")
-  receivedMessages Message[] @relation("UserReceivedMessages")
+  id               String       @id @default(cuid())
+  username         String       @unique
+  password         String
+  avatar           String?
+  isOnline         Boolean      @default(false)
+  isAdmin          Boolean      @default(false)
+  lastSeen         DateTime     @default(now())
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
   chatMembers      ChatMember[]
+  receivedMessages Message[]    @relation("UserReceivedMessages")
+  sentMessages     Message[]    @relation("UserSentMessages")
 
   @@map("users")
 }
 
 model Chat {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String?
-  isGroup   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  messages Message[]
-  members  ChatMember[]
+  isGroup   Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   ChatMember[]
+  messages  Message[]
 
   @@map("chats")
 }
@@ -45,50 +41,43 @@ model ChatMember {
   userId String
   chatId String
   role   String @default("member")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, chatId])
   @@map("chat_members")
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String
-  senderId  String
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
   receiverId String?
-  chatId    String?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sender   User @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User? @relation("UserReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  chat     Chat? @relation(fields: [chatId], references: [id], onDelete: Cascade)
-
-  // File attachment fields
-  fileName     String?  // Name of the uploaded file
-  fileUrl      String?  // URL to access the file
-  fileType     String?  // MIME type of the file (image/png, application/pdf, etc.)
-  fileSize     Int?     // Size of the file in bytes
-
-  // Relation to File model
-  files File[]
+  chatId     String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fileName   String?
+  fileSize   Int?
+  fileType   String?
+  fileUrl    String?
+  files      File[]
+  chat       Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  receiver   User?    @relation("UserReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
 
 model File {
   id        String   @id @default(cuid())
-  name      String   // Original file name
-  url       String   // URL to access the file
-  type      String   // MIME type
-  size      Int      // File size in bytes
-  messageId String   // Reference to the message
+  name      String
+  url       String
+  type      String
+  size      Int
+  messageId String
   createdAt DateTime @default(now())
-
-  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("files")
 }

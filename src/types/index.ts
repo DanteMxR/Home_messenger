@@ -5,6 +5,7 @@ export interface User {
   username: string
   avatar?: string | null
   isOnline: boolean
+  isAdmin?: boolean
   lastSeen: Date
   createdAt?: Date
 }
@@ -113,6 +114,7 @@ export interface AuthUser {
   username: string
   avatar?: string | null
   isOnline: boolean
+  isAdmin?: boolean
   lastSeen: Date
   createdAt: Date
 }
