@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, MessageCircle, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus, Shield } from 'lucide-react'
+import { Search, MessageCircle, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus, Shield, SquareKanban } from 'lucide-react'
 import { ChatUser, User, GroupChat } from '@/types'
 import { formatTime, formatLastSeen, getLastMessagePreview, getUserInitials } from '@/utils'
 import { Button } from '@/components/ui/button'
@@ -130,6 +130,16 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 Админ-панель
               </Button>
             )}
+            
+            {/* Task Board Link */}
+            <Button 
+              variant="outline" 
+              className="mt-2 w-full justify-start"
+              onClick={() => window.location.href = '/task-board'}
+            >
+              <SquareKanban className="h-4 w-4 mr-2" />
+              Доска задач
+            </Button>
           </>
         )}
       </div>

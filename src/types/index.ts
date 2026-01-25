@@ -1,3 +1,7 @@
+// Utility types
+export type Theme = 'light' | 'dark'
+export type MessageType = 'text' | 'file' | 'image'
+
 // Shared TypeScript interfaces and types for the messenger application
 
 export interface User {
@@ -80,66 +84,6 @@ export interface ClipboardImagePreview {
   url: string
 }
 
-// Socket event types
-export interface SocketMessageData {
-  content: string
-  receiverId: string
-  chatId?: string
-}
-
-export interface SocketFileData extends SocketMessageData {
-  fileName: string
-  fileUrl: string
-  fileType: string
-  fileSize: number
-}
-
-// API Response types
-export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-}
-
-export interface ChatListResponse {
-  chats: (ChatUser | GroupChat)[]
-}
-
-export interface MessagesResponse {
-  messages: Message[]
-}
-
-export interface AuthUser {
-  id: string
-  username: string
-  avatar?: string | null
-  isOnline: boolean
-  isAdmin?: boolean
-  lastSeen: Date
-  createdAt: Date
-}
-
-export interface LoginResponse {
-  user: AuthUser
-  token?: string
-}
-
-// File upload types
-export interface FileUploadData {
-  file: File
-  receiverId: string
-  content?: string
-}
-
-export interface FileUploadResponse {
-  message: Message
-  fileUrl: string
-}
-
-// Utility types
-export type Theme = 'light' | 'dark'
-export type MessageType = 'text' | 'file' | 'image'
-
 // Component state types for better organization
 export interface ChatPageState {
   selectedUser: User | null
@@ -168,6 +112,49 @@ export interface UseChatReturn {
   markMessagesAsRead: (senderId: string) => Promise<void>
 }
 
+
+// API Response types
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+export interface ChatListResponse {
+  chats: (ChatUser | GroupChat)[]
+}
+
+export interface MessagesResponse {
+  messages: Message[]
+}
+
+// File upload types
+export interface FileUploadData {
+  file: File
+  receiverId: string
+  content?: string
+}
+
+export interface FileUploadResponse {
+  message: Message
+  fileUrl: string
+}
+
+export interface AuthUser {
+  id: string
+  username: string
+  avatar?: string | null
+  isOnline: boolean
+  isAdmin?: boolean
+  lastSeen: Date
+  createdAt: Date
+}
+
+export interface LoginResponse {
+  user: AuthUser
+  token?: string
+}
+
 export interface UseMessagesReturn {
   messages: Message[]
   sendMessage: (content: string) => void
@@ -185,8 +172,110 @@ export interface UseSettingsReturn {
   isUploadingAvatar: boolean
   avatarPreview: string | null
   setShowSettings: (show: boolean) => void
-  handleSettingsChange: (key: keyof Settings, value: any) => void
+  handleSettingsChange: (key: keyof Settings, value: unknown) => void
   saveSettings: () => Promise<void>
   uploadAvatar: (file: File) => Promise<void>
   removeAvatar: () => Promise<void>
+}
+
+// Task Management Types
+export interface Board {
+  id: string;
+  title: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  creatorId: string;
+}
+
+export interface BoardMember {
+  id: string;
+  boardId: string;
+  userId: string;
+  role: string; // 'owner', 'member', 'admin'
+  joinedAt: Date;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: string; // 'todo', 'in_progress', 'review', 'done'
+  priority: string; // 'low', 'medium', 'high', 'urgent'
+  assigneeId?: string;
+  creatorId: string;
+  boardId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  dueDate?: Date | string;
+}
+
+export interface TaskWithRelations extends Task {
+  creator: {
+    id: string;
+    username: string;
+    avatar?: string | null;
+    isOnline: boolean;
+    isAdmin?: boolean;
+    lastSeen: Date;
+    createdAt?: Date;
+  };
+  assignee?: {
+    id: string;
+    username: string;
+    avatar?: string | null;
+    isOnline: boolean;
+    isAdmin?: boolean;
+    lastSeen: Date;
+    createdAt?: Date;
+  };
+  board: Board;
+  messages: {
+    id: string;
+    content: string;
+    senderId: string;
+    receiverId?: string;
+    chatId?: string;
+    isRead: boolean;
+    createdAt: Date;
+    updatedAt?: Date;
+    sender: {
+      id: string;
+      username: string;
+      avatar?: string | null;
+    };
+    fileName?: string | null;
+    fileUrl?: string | null;
+    fileType?: string | null;
+    fileSize?: number | null;
+  }[];
+}
+
+export interface BoardWithRelations extends Board {
+  tasks: Task[];
+  members: BoardMember[];
+  creator: User;
+}
+
+export interface CreateBoardData {
+  title: string;
+  description?: string;
+}
+
+export interface CreateTaskData {
+  title: string;
+  description?: string;
+  boardId: string;
+  assigneeId?: string;
+  priority?: string;
+  dueDate?: Date;
+}
+
+export interface UpdateTaskData {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  assigneeId?: string;
+  dueDate?: Date | string;
 }

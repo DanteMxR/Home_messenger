@@ -8,18 +8,22 @@ datasource db {
 }
 
 model User {
-  id               String       @id @default(cuid())
-  username         String       @unique
+  id               String        @id @default(cuid())
+  username         String        @unique
   password         String
   avatar           String?
-  isOnline         Boolean      @default(false)
-  isAdmin          Boolean      @default(false)
-  lastSeen         DateTime     @default(now())
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  isOnline         Boolean       @default(false)
+  isAdmin          Boolean       @default(false)
+  lastSeen         DateTime      @default(now())
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  boardMemberships BoardMember[]
+  boards           Board[]       @relation("BoardCreator")
   chatMembers      ChatMember[]
-  receivedMessages Message[]    @relation("UserReceivedMessages")
-  sentMessages     Message[]    @relation("UserSentMessages")
+  sentMessages     Message[]     @relation("UserSentMessages")
+  receivedMessages Message[]     @relation("UserReceivedMessages")
+  tasks            Task[]        @relation("TaskAssignee")
+  createdTasks     Task[]        @relation("TaskCreator")
 
   @@map("users")
 }
@@ -28,9 +32,11 @@ model Chat {
   id        String       @id @default(cuid())
   name      String?
   isGroup   Boolean      @default(false)
+  taskId    String?      @unique
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   members   ChatMember[]
+  task      Task?        @relation("ChatTask", fields: [taskId], references: [id])
   messages  Message[]
 
   @@map("chats")
@@ -61,10 +67,12 @@ model Message {
   fileSize   Int?
   fileType   String?
   fileUrl    String?
+  taskId     String?
   files      File[]
-  chat       Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  receiver   User?    @relation("UserReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  task       Task?    @relation(fields: [taskId], references: [id])
   sender     User     @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User?    @relation("UserReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  chat       Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
@@ -80,4 +88,53 @@ model File {
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("files")
+}
+
+model Board {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  creatorId   String
+  members     BoardMember[]
+  creator     User          @relation("BoardCreator", fields: [creatorId], references: [id])
+  tasks       Task[]
+
+  @@map("boards")
+}
+
+model BoardMember {
+  id       String   @id @default(cuid())
+  boardId  String
+  userId   String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board    Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@map("board_members")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("todo")
+  priority    String    @default("medium")
+  assigneeId  String?
+  creatorId   String
+  boardId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  dueDate     DateTime?
+  chatId      String?   @unique
+  chat        Chat?     @relation("ChatTask")
+  messages    Message[]
+  board       Board     @relation(fields: [boardId], references: [id])
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  @@map("tasks")
 }
