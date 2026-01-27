@@ -203,11 +203,13 @@ export interface Task {
   status: string; // 'todo', 'in_progress', 'review', 'done'
   priority: string; // 'low', 'medium', 'high', 'urgent'
   assigneeId?: string;
+  assigneeIds?: string[];
   creatorId: string;
   boardId: string;
   createdAt: Date;
   updatedAt: Date;
   dueDate?: Date | string;
+  chatId?: string;
 }
 
 export interface TaskWithRelations extends Task {
@@ -277,5 +279,6 @@ export interface UpdateTaskData {
   status?: string;
   priority?: string;
   assigneeId?: string;
+  assigneeIds?: string[];
   dueDate?: Date | string;
 }

@@ -58,6 +58,32 @@ export default function TaskBoardPage() {
       console.error('Error creating board:', error);
     }
   };
+  
+  const handleDeleteBoard = async (boardId: string) => {
+    if (!window.confirm('Вы уверены, что хотите удалить эту доску? Все задачи на этой доске также будут удалены.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/boards?id=${boardId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        fetchBoards(); // Refresh boards
+        if (selectedBoard && selectedBoard.id === boardId) {
+          setSelectedBoard(null); // Deselect the board if it was selected
+        }
+      } else {
+        console.error('Failed to delete board:', result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting board:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -69,7 +95,12 @@ export default function TaskBoardPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Доска задач</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Доска задач</h1>
+        <Button variant="outline" onClick={() => window.location.href = '/chat'}>
+          Перейти в мессенджер
+        </Button>
+      </div>
       
       {!selectedBoard ? (
         <div>
@@ -90,8 +121,21 @@ export default function TaskBoardPage() {
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => setSelectedBoard(board)}
               >
-                <CardHeader>
-                  <CardTitle>{board.title}</CardTitle>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{board.title}</CardTitle>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the card click
+                        handleDeleteBoard(board.id);
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500">

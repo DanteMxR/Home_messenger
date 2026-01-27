@@ -149,3 +149,61 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authUser = await getAuthUser();
+    
+    if (!authUser || !authUser.userId) {
+      return NextResponse.json(
+        { error: 'Неавторизованный доступ' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const boardId = searchParams.get('id');
+
+    if (!boardId) {
+      return NextResponse.json(
+        { error: 'ID доски обязателен' },
+        { status: 400 }
+      );
+    }
+
+    // Check if the board exists and the user is the owner
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+      include: {
+        members: {
+          where: {
+            userId: authUser.userId,
+            role: 'owner', // Only owners can delete boards
+          }
+        }
+      }
+    });
+
+    if (!board || board.members.length === 0) {
+      return NextResponse.json(
+        { error: 'У вас нет прав для удаления этой доски' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the board and all related records (tasks, boardMembers, etc.)
+    await prisma.board.delete({
+      where: { id: boardId }
+    });
+
+    return NextResponse.json({ 
+      message: 'Доска успешно удалена' 
+    });
+  } catch (error) {
+    console.error('Delete board error:', error);
+    return NextResponse.json(
+      { error: 'Внутренняя ошибка сервера' },
+      { status: 500 }
+    );
+  }
+}
