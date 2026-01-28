@@ -14,18 +14,11 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q') || '';
     const boardId = searchParams.get('boardId');
 
-    // Search for tasks that belong to boards the user has access to
+    // Search for all tasks (accessible to all authenticated users)
     const tasks = await prisma.task.findMany({
       where: {
         title: {
           contains: query,
-          mode: 'insensitive',
-        },
-        board: {
-          OR: [
-            { creatorId: authUser.userId },
-            { members: { some: { userId: authUser.userId } } }
-          ]
         },
         ...(boardId && { boardId }) // Filter by specific board if provided
       },

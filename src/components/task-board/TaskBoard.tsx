@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Task, Board, CreateTaskData, UpdateTaskData, User, TaskWithRelations } from '@/types';
+import BoardMembersDialog from '@/components/chat/dialogs/BoardMembersDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TaskBoardProps {
   board: Board;
@@ -39,6 +41,7 @@ const PRIORITY_OPTIONS = [
 ];
 
 export default function TaskBoard({ board }: TaskBoardProps) {
+  const { user: currentUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -56,6 +59,8 @@ export default function TaskBoard({ board }: TaskBoardProps) {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [attachedFilesPreview, setAttachedFilesPreview] = useState<{file: File, preview: string}[]>([]);
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
 
   const fetchTaskDetails = async (taskId: string) => {
     try {
@@ -76,7 +81,8 @@ export default function TaskBoard({ board }: TaskBoardProps) {
   useEffect(() => {
     fetchTasks();
     fetchUsers();
-  }, [board.id]);
+    fetchCurrentUserRole();
+  }, [board.id, currentUser]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -93,6 +99,35 @@ export default function TaskBoard({ board }: TaskBoardProps) {
       console.error('Error fetching users:', error);
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const fetchCurrentUserRole = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await fetch(`/api/boards/members?boardId=${board.id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        const currentUserMember = data.members.find(
+          (member: { userId: string }) => member.userId === currentUser.id
+        );
+        if (currentUserMember) {
+          setCurrentUserRole(currentUserMember.role);
+        } else {
+          // Check if current user is the board creator
+          if (currentUser.id === board.creatorId) {
+            setCurrentUserRole('owner');
+          } else {
+            setCurrentUserRole(''); // Not a member
+          }
+        }
+      } else {
+        console.error('Failed to fetch board members:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching current user role:', error);
     }
   };
 
@@ -463,7 +498,14 @@ export default function TaskBoard({ board }: TaskBoardProps) {
 
   return (
     <div className="w-full">
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6 space-x-2">
+        <Button 
+          variant="outline" 
+          className="border-gray-400 text-gray-800 hover:bg-gray-100"
+          onClick={() => setShowMembersDialog(true)}
+        >
+          Участники доски
+        </Button>
         <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
           <DialogTrigger asChild>
             <Button variant="outline" className="border-gray-400 text-gray-800 hover:bg-gray-100">Создать задачу</Button>
@@ -578,6 +620,13 @@ export default function TaskBoard({ board }: TaskBoardProps) {
             </form>
           </DialogContent>
         </Dialog>
+        <BoardMembersDialog
+          boardId={board.id}
+          boardCreatorId={board.creatorId}
+          currentUserRole={currentUserRole}
+          isOpen={showMembersDialog}
+          onOpenChange={setShowMembersDialog}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

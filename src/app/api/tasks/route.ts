@@ -8,6 +8,7 @@ const createTaskSchema = z.object({
   description: z.string().max(1000).optional(),
   boardId: z.string(),
   assigneeId: z.string().optional(),
+  assigneeIds: z.array(z.string()).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   dueDate: z.string().datetime().optional(),
 });
@@ -88,6 +89,21 @@ export async function GET(request: NextRequest) {
             }
           },
           orderBy: { createdAt: 'asc' }
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                isOnline: true,
+                isAdmin: true,
+                lastSeen: true,
+                createdAt: true,
+              }
+            }
+          }
         }
       },
       orderBy: { createdAt: 'desc' },
@@ -115,20 +131,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, boardId, assigneeId, priority, dueDate } = createTaskSchema.parse(body);
+    const { title, description, boardId, assigneeId, assigneeIds, priority, dueDate } = createTaskSchema.parse(body);
 
-    // Check if user has access to the board
-    const boardMember = await prisma.boardMember.findFirst({
-      where: {
-        boardId,
-        userId: authUser.userId,
-      }
+    // Check if board exists (any authenticated user can create tasks on any board)
+    const board = await prisma.board.findUnique({
+      where: { id: boardId }
     });
 
-    if (!boardMember) {
+    if (!board) {
       return NextResponse.json(
-        { error: 'У вас нет доступа к этой доске' },
-        { status: 403 }
+        { error: 'Доска не найдена' },
+        { status: 404 }
       );
     }
 
@@ -165,8 +178,87 @@ export async function POST(request: NextRequest) {
             title: true,
           }
         },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                isOnline: true,
+                isAdmin: true,
+                lastSeen: true,
+                createdAt: true,
+              }
+            }
+          }
+        }
       },
     });
+
+    // Create task assignee relationships
+    if (assigneeIds && assigneeIds.length > 0) {
+      // Remove duplicates and filter out empty strings
+      const uniqueAssigneeIds = [...new Set(assigneeIds.filter(id => id && id.trim()))];
+      
+      // Create task assignee records
+      await prisma.taskAssignee.createMany({
+        data: uniqueAssigneeIds.map(userId => ({
+          taskId: task.id,
+          userId,
+        })),
+        skipDuplicates: true,
+      });
+      
+      // Re-fetch the task with updated assignees
+      const updatedTask = await prisma.task.findUnique({
+        where: { id: task.id },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+              isOnline: true,
+            }
+          },
+          assignee: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+              isOnline: true,
+            }
+          },
+          board: {
+            select: {
+              id: true,
+              title: true,
+            }
+          },
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatar: true,
+                  isOnline: true,
+                  isAdmin: true,
+                  lastSeen: true,
+                  createdAt: true,
+                }
+              }
+            }
+          }
+        },
+      });
+      
+      return NextResponse.json({ 
+        message: 'Задача успешно создана', 
+        task: updatedTask 
+      });
+    }
 
     return NextResponse.json({ 
       message: 'Задача успешно создана', 
@@ -207,26 +299,18 @@ export async function PATCH(request: NextRequest) {
       ...rest
     }) => rest)(parsedBody);
 
-    // Check if user is the creator, assignee, or board member with edit rights
+    // Check if task exists (any authenticated user can update tasks)
     const task = await prisma.task.findUnique({
       where: { id },
       include: {
-        board: {
-          include: {
-            members: {
-              where: {
-                userId: authUser.userId,
-              }
-            }
-          }
-        }
+        board: true
       }
     });
 
-    if (!task || task.board.members.length === 0) {
+    if (!task) {
       return NextResponse.json(
-        { error: 'У вас нет доступа к этой задаче' },
-        { status: 403 }
+        { error: 'Задача не найдена' },
+        { status: 404 }
       );
     }
 
@@ -305,27 +389,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if user is the creator of the task
+    // Check if task exists (any authenticated user can delete tasks)
     const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        board: {
-          include: {
-            members: {
-              where: {
-                userId: authUser.userId,
-                role: 'owner', // Only owners can delete tasks
-              }
-            }
-          }
-        }
-      }
+      where: { id: taskId }
     });
 
-    if (!task || task.creatorId !== authUser.userId || task.board.members.length === 0) {
+    if (!task) {
       return NextResponse.json(
-        { error: 'У вас нет прав для удаления этой задачи' },
-        { status: 403 }
+        { error: 'Задача не найдена' },
+        { status: 404 }
       );
     }
 

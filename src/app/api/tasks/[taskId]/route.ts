@@ -15,19 +15,11 @@ export async function GET(
 
     const { taskId } = await params;
     
-    // Check if the task exists and belongs to the current user's boards
+    // Check if the task exists (any authenticated user can access tasks)
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: {
-        board: {
-          include: {
-            members: {
-              select: {
-                userId: true
-              }
-            }
-          }
-        },
+        board: true,
         assignee: {
           select: {
             id: true,
@@ -47,14 +39,6 @@ export async function GET(
 
     if (!task) {
       return NextResponse.json({ error: 'Задача не найдена' }, { status: 404 });
-    }
-
-    // Check if user has access to the board (either creator or member)
-    const isBoardMember = task.board.creatorId === authUser.userId || 
-      task.board.members.some((member: any) => member.userId === authUser.userId);
-
-    if (!isBoardMember) {
-      return NextResponse.json({ error: 'Нет доступа к задаче' }, { status: 403 });
     }
 
     return NextResponse.json({ task }, { status: 200 });
@@ -77,32 +61,13 @@ export async function DELETE(
 
     const { taskId } = await params;
     
-    // Check if the task exists and belongs to the current user's boards
+    // Check if the task exists (any authenticated user can delete tasks)
     const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        board: {
-          include: {
-            members: {
-              select: {
-                userId: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: taskId }
     });
 
     if (!task) {
       return NextResponse.json({ error: 'Задача не найдена' }, { status: 404 });
-    }
-
-    // Check if user has access to the board (either creator or member)
-    const isBoardMember = task.board.creatorId === authUser.userId || 
-      task.board.members.some((member: any) => member.userId === authUser.userId);
-
-    if (!isBoardMember) {
-      return NextResponse.json({ error: 'Нет доступа к задаче' }, { status: 403 });
     }
     
     // Delete the task

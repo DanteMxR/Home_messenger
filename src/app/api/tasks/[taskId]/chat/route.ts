@@ -16,32 +16,13 @@ export async function POST(
 
     const { taskId } = params;
     
-    // Check if the task exists and belongs to the current user's boards
+    // Check if the task exists (any authenticated user can create task chats)
     const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        board: {
-          include: {
-            members: {
-              select: {
-                userId: true
-              }
-            }
-          }
-        }
-      }
+      where: { id: taskId }
     });
 
     if (!task) {
       return NextResponse.json({ error: 'Задача не найдена' }, { status: 404 });
-    }
-
-    // Check if user has access to the board (either creator or member)
-    const isBoardMember = task.board.creatorId === authUser.userId || 
-      task.board.members.some((member: any) => member.userId === authUser.userId);
-
-    if (!isBoardMember) {
-      return NextResponse.json({ error: 'Нет доступа к задаче' }, { status: 403 });
     }
 
     // Create a new chat for the task

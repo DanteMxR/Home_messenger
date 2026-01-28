@@ -231,6 +231,21 @@ export interface TaskWithRelations extends Task {
     lastSeen: Date;
     createdAt?: Date;
   };
+  assignees?: {
+    id: string;
+    taskId: string;
+    userId: string;
+    assignedAt: Date;
+    user: {
+      id: string;
+      username: string;
+      avatar?: string | null;
+      isOnline: boolean;
+      isAdmin?: boolean;
+      lastSeen: Date;
+      createdAt?: Date;
+    };
+  }[];
   board: Board;
   messages: {
     id: string;

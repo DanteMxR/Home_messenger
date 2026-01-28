@@ -24,6 +24,7 @@ model User {
   receivedMessages Message[]     @relation("UserReceivedMessages")
   tasks            Task[]        @relation("TaskAssignee")
   createdTasks     Task[]        @relation("TaskCreator")
+  assignedTasks    TaskAssignee[]
 
   @@map("users")
 }
@@ -118,23 +119,36 @@ model BoardMember {
 }
 
 model Task {
-  id          String    @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
   description String?
-  status      String    @default("todo")
-  priority    String    @default("medium")
+  status      String        @default("todo")
+  priority    String        @default("medium")
   assigneeId  String?
   creatorId   String
   boardId     String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   dueDate     DateTime?
-  chatId      String?   @unique
-  chat        Chat?     @relation("ChatTask")
+  chatId      String?       @unique
+  chat        Chat?         @relation("ChatTask")
   messages    Message[]
-  board       Board     @relation(fields: [boardId], references: [id])
-  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  board       Board         @relation(fields: [boardId], references: [id])
+  assignee    User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator     User          @relation("TaskCreator", fields: [creatorId], references: [id])
+  assignees   TaskAssignee[]
 
   @@map("tasks")
+}
+
+model TaskAssignee {
+  id      String @id @default(cuid())
+  taskId  String
+  userId  String
+  assignedAt DateTime @default(now())
+  task    Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
 }

@@ -39,20 +39,43 @@ export default function TaskBoardPage() {
   const handleCreateBoard = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate input
+    if (!newBoardTitle.trim()) {
+      console.error('Board title is required');
+      return;
+    }
+    
+    if (newBoardTitle.trim().length > 100) {
+      console.error('Board title must be less than 100 characters');
+      return;
+    }
+    
+    console.log('Attempting to create board with title:', newBoardTitle.trim());
+    
     try {
       const response = await fetch('/api/boards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newBoardTitle }),
+        body: JSON.stringify({ 
+          title: newBoardTitle.trim(),
+          description: ''
+        }),
       });
       
+      console.log('Board creation response status:', response.status);
+      
       const result = await response.json();
+      console.log('Board creation response:', result);
       
       if (response.ok) {
+        console.log('Board created successfully');
         setNewBoardTitle('');
         fetchBoards(); // Refresh boards
       } else {
         console.error('Failed to create board:', result.error);
+        if (result.details) {
+          console.error('Validation errors:', result.details);
+        }
       }
     } catch (error) {
       console.error('Error creating board:', error);
@@ -110,8 +133,9 @@ export default function TaskBoardPage() {
               value={newBoardTitle}
               onChange={(e) => setNewBoardTitle(e.target.value)}
               className="flex-1"
+              required
             />
-            <Button type="submit">Создать доску</Button>
+            <Button type="submit" disabled={!newBoardTitle.trim()}>Создать доску</Button>
           </form>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

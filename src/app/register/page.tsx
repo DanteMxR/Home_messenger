@@ -43,8 +43,8 @@ export default function RegisterPage() {
   const displayError = localError || error
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundImage: 'url(/images/image.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundColor: '#f3f4f6' }}>
+      <Card className="w-full max-w-md bg-white shadow-lg p-6">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <MessageCircle className="h-12 w-12 text-blue-600" />

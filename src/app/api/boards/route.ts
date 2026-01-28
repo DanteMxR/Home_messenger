@@ -19,14 +19,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all boards where user is either creator or member
+    // Get all boards (visible to all authenticated users)
     const boards = await prisma.board.findMany({
-      where: {
-        OR: [
-          { creatorId: authUser.userId },
-          { members: { some: { userId: authUser.userId } } }
-        ]
-      },
       include: {
         creator: {
           select: {
@@ -77,17 +71,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Board creation request received');
+    
     const authUser = await getAuthUser();
     
     if (!authUser || !authUser.userId) {
+      console.log('Authentication failed:', { authUser });
       return NextResponse.json(
         { error: 'Неавторизованный доступ' },
         { status: 401 }
       );
     }
+    
+    console.log('Authenticated user:', authUser.userId);
 
     const body = await request.json();
+    console.log('Request body:', body);
+    
     const { title, description } = createBoardSchema.parse(body);
+    
+    console.log('Parsed data:', { title, description });
 
     const board = await prisma.board.create({
       data: {
@@ -171,23 +174,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if the board exists and the user is the owner
+    // Check if the board exists (any authenticated user can delete boards)
     const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      include: {
-        members: {
-          where: {
-            userId: authUser.userId,
-            role: 'owner', // Only owners can delete boards
-          }
-        }
-      }
+      where: { id: boardId }
     });
 
-    if (!board || board.members.length === 0) {
+    if (!board) {
       return NextResponse.json(
-        { error: 'У вас нет прав для удаления этой доски' },
-        { status: 403 }
+        { error: 'Доска не найдена' },
+        { status: 404 }
       );
     }
 
