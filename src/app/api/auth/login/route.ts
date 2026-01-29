@@ -15,7 +15,18 @@ export async function POST(request: NextRequest) {
 
     // Find user by username
     const user = await prisma.user.findUnique({
-      where: { username }
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        avatar: true,
+        isOnline: true,
+        isAdmin: true,
+        lastSeen: true,
+        createdAt: true,
+        updatedAt: true,
+      }
     })
 
     if (!user) {
@@ -56,7 +67,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Вход выполнен успешно',
-      user: userWithoutPassword,
+      user: {
+        ...userWithoutPassword,
+        isAdmin: user.isAdmin,
+      },
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

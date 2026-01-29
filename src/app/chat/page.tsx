@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { 
   ChatSidebar, 
@@ -14,11 +15,15 @@ import {
 } from '@/components/chat'
 import { GroupChatDialog } from '@/components/chat/dialogs/GroupChatDialog'
 import { useChat, useMessages, useSettings, useClipboardImage, useMobile } from '@/hooks'
-import { User, ChatUser, GroupChat } from '@/types'
+import { User, ChatUser, GroupChat, Task } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ChatPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskId = searchParams ? searchParams.get('taskId') : null;
+  
   const { user, logout, isConnected } = useAuth()
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [messageText, setMessageText] = useState('')
@@ -26,7 +31,27 @@ export default function ChatPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showGroupDialog, setShowGroupDialog] = useState(false)
   const [creatingGroup, setCreatingGroup] = useState(false)
+  const [task, setTask] = useState<Task | null>(null);
   const { isMobile } = useMobile()
+  
+  // Fetch task if taskId is present
+  useEffect(() => {
+    const fetchTask = async () => {
+      if (taskId) {
+        try {
+          const response = await fetch(`/api/tasks/${taskId}`);
+          if (response.ok) {
+            const taskData = await response.json();
+            setTask(taskData.task);
+          }
+        } catch (error) {
+          console.error('Error fetching task:', error);
+        }
+      }
+    };
+    
+    fetchTask();
+  }, [taskId]);
 
   // Custom hooks for managing different aspects of the chat
   const {
@@ -184,6 +209,7 @@ export default function ChatPage() {
           onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           isCollapsed={sidebarCollapsed}
           onOpenGroupDialog={() => setShowGroupDialog(true)}
+          currentUser={user}
         >
           <UserProfile
             user={user}

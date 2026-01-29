@@ -8,6 +8,7 @@ interface User {
   username: string
   avatar?: string | null
   isOnline: boolean
+  isAdmin?: boolean
   lastSeen: Date
   createdAt: Date
 }

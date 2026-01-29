@@ -23,7 +23,9 @@ export function signJWT(payload: JWTPayload): string {
 
 export function verifyJWT(token: string): JWTPayload | null {
   try {
+    console.log('Verifying JWT token')
     const result = jwt.verify(token, JWT_SECRET) as JWTPayload
+    console.log('JWT verification successful:', result)
     return result
   } catch (error) {
     console.error('JWT verification failed:', error instanceof Error ? error.message : 'Unknown error')
@@ -35,9 +37,13 @@ export async function getAuthUser(): Promise<JWTPayload | null> {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
+    console.log('Auth token from cookie:', token ? 'exists' : 'missing')
     if (!token) return null
-    return verifyJWT(token)
+    const payload = verifyJWT(token)
+    console.log('JWT verification result:', payload)
+    return payload
   } catch (error) {
+    console.error('Error in getAuthUser:', error)
     return null
   }
 }
