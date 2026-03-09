@@ -18,7 +18,7 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export function signJWT(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }) // Shorter expiration for socket tokens
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
 
 export function verifyJWT(token: string): JWTPayload | null {

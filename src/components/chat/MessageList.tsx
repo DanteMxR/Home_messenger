@@ -83,7 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-hidden chat-pattern">
+    <div className="flex-1 overflow-hidden">
       <ScrollArea className="h-full p-4">
         <div className="space-y-4 max-w-full">
           {messages.map((message) => (
@@ -108,10 +108,10 @@ export const MessageList: React.FC<MessageListProps> = ({
                 </div>
               )}
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative cursor-pointer hover:opacity-90 ${
+                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative cursor-pointer transition-colors hover:opacity-95 ${
                   message.senderId === currentUser?.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
+                    ? 'bg-primary/75 dark:bg-primary/65 text-primary-foreground'
+                    : 'bg-muted/90 text-foreground'
                 } ${message.fileName && message.fileUrl && isImageFile(message.fileType) ? '!max-w-full' : ''}`}
                 onClick={(e) => {
                   // Prevent click event when clicking on links or buttons inside the message
@@ -205,7 +205,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 
                 <p
                   className={`text-xs mt-1 ${
-                    message.senderId === currentUser?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                    message.senderId === currentUser?.id ? 'text-primary-foreground/60' : 'text-muted-foreground'
                   }`}
                 >
                   {formatTime(message.createdAt)}

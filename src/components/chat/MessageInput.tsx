@@ -1,5 +1,5 @@
 // Message input component with file upload and emoji picker
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Paperclip, Send, Smile, X } from 'lucide-react'
@@ -32,8 +32,27 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [isDarkTheme, setIsDarkTheme] = useState(false)
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  useEffect(() => {
+    const root = document.documentElement
+    const getThemeState = () => {
+      if (root.classList.contains('dark')) return true
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+
+    setIsDarkTheme(getThemeState())
+
+    const observer = new MutationObserver(() => {
+      setIsDarkTheme(getThemeState())
+    })
+
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       onSendMessage()
@@ -44,7 +63,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const files = event.target.files
     if (files && files.length > 0) {
       onFileSelect(files[0])
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -59,122 +77,117 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const addEmoji = (emoji: { native: string }) => {
     onMessageChange(messageText + emoji.native)
-    // Close emoji picker after selecting an emoji on mobile
     if (window.innerWidth < 768) {
       setShowEmojiPicker(false)
     }
   }
 
-  const canSend = messageText.trim() && !isUploading && !clipboardImage
+  const canSend = !!messageText.trim() && !isUploading && !clipboardImage
+  const controlsDisabled = disabled || isUploading || !!clipboardImage
 
   return (
-    <div className="bg-card border-t border-border p-4 flex-shrink-0 relative">
+    <div className="relative flex-shrink-0 bg-transparent px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
       {/* Clipboard image preview */}
       {clipboardImage && (
-        <div className="mb-4 p-3 bg-muted rounded-lg">
-          <div className="flex justify-between items-center mb-2">
+        <div className="mx-auto mb-3 w-full max-w-5xl rounded-3xl border border-white/20 bg-background/85 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-card/80">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-foreground">Предварительный просмотр изображения</span>
-            <Button 
-              size="icon" 
-              variant="ghost"
-              onClick={onCancelClipboardImage}
-              className="h-6 w-6"
-            >
+            <Button size="icon" variant="ghost" onClick={onCancelClipboardImage} className="h-6 w-6">
               <X className="h-4 w-4" />
             </Button>
           </div>
           <div className="flex items-center space-x-2">
-            <img 
-              src={clipboardImage.url} 
-              alt="Clipboard preview" 
+            <img
+              src={clipboardImage.url}
+              alt="Clipboard preview"
               className="max-h-32 max-w-full rounded object-contain"
             />
             <div className="flex flex-col space-y-2">
-              <Button 
-                size="sm" 
-                onClick={onSendClipboardImage}
-                disabled={isUploading}
-              >
+              <Button size="sm" onClick={onSendClipboardImage} disabled={isUploading}>
                 Отправить
               </Button>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={onCancelClipboardImage}
-              >
+              <Button size="sm" variant="outline" onClick={onCancelClipboardImage}>
                 Отмена
               </Button>
             </div>
           </div>
         </div>
       )}
-      
-      <div className="flex items-center space-x-2">
-        <Input
-          placeholder="Введите сообщение..."
-          value={messageText}
-          onChange={(e) => onMessageChange(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-1"
-          disabled={disabled || isUploading || !!clipboardImage}
-        />
-        <div className="flex items-center space-x-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={disabled || isUploading || !!clipboardImage}
-          />
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={triggerFileSelect}
-            disabled={disabled || isUploading || !!clipboardImage}
-            className="flex-shrink-0"
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="flex-shrink-0"
-          >
-            <Smile className="h-4 w-4" />
-          </Button>
-          <Button 
-            onClick={onSendMessage} 
-            disabled={!canSend || disabled} 
-            className="flex-shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
-      {/* Emoji picker */}
-      {showEmojiPicker && (
-        <div className="absolute bottom-full right-0 mb-2 z-10 emoji-picker-container">
-          <div className="md:max-w-xs max-w-[calc(100vw-2rem)]">
-            <Picker 
-              data={data} 
-              onEmojiSelect={addEmoji} 
-              theme="light"
-              perLine={8}
-              emojiSize={24}
-              emojiButtonSize={32}
-              navPosition="bottom"
-              previewPosition="none"
-              skinTonePosition="none"
-              maxFrequentRows={2}
+
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="relative rounded-full p-[1px] shadow-[0_12px_38px_-20px_rgba(15,23,42,0.65)]">
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-white/18 via-slate-200/8 to-white/18 opacity-80 blur-[1.5px]" />
+          <div className="relative flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <Input
+              placeholder="Введите сообщение..."
+              value={messageText}
+              onChange={(e) => onMessageChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="h-11 flex-1 rounded-full border-0 bg-transparent pl-4 pr-2 shadow-none focus-visible:border-transparent focus-visible:ring-0"
+              disabled={controlsDisabled}
             />
+
+            <div className="relative flex items-center gap-1 pr-1">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                disabled={controlsDisabled}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={triggerFileSelect}
+                disabled={controlsDisabled}
+                className="size-9 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground dark:hover:bg-white/8"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                disabled={controlsDisabled}
+                className="size-9 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground dark:hover:bg-white/8"
+              >
+                <Smile className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={onSendMessage}
+                disabled={!canSend || disabled}
+                className="size-9 rounded-full border border-border bg-secondary p-0 text-secondary-foreground shadow-md hover:bg-secondary/80"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+
+              {/* Emoji picker */}
+              {showEmojiPicker && (
+                <div className="emoji-picker-container absolute bottom-full right-10 z-10 mb-2">
+                  <div className="max-w-[calc(100vw-2rem)] md:max-w-xs">
+                    <Picker
+                      data={data}
+                      onEmojiSelect={addEmoji}
+                      theme={isDarkTheme ? 'dark' : 'light'}
+                      perLine={8}
+                      emojiSize={24}
+                      emojiButtonSize={32}
+                      navPosition="bottom"
+                      previewPosition="none"
+                      skinTonePosition="none"
+                      maxFrequentRows={2}
+                      categories={['frequent', 'people', 'nature', 'foods', 'activity', 'places', 'objects', 'symbols']}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
-      
+      </div>
+
       {isUploading && (
-        <p className="text-sm text-muted-foreground mt-2">Загрузка файла...</p>
+        <p className="mx-auto mt-2 w-full max-w-5xl px-1 text-sm text-muted-foreground">Загрузка файла...</p>
       )}
     </div>
   )

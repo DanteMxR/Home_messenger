@@ -248,7 +248,7 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col min-w-0 relative ${!isMobile && sidebarCollapsed ? 'ml-16' : ''}`}>
+      <div className="relative flex min-w-0 flex-1 flex-col">
         {/* Mobile header with menu button */}
         {isMobile && !selectedUser && (
           <div className="p-4 border-b border-border flex items-center">
@@ -283,26 +283,28 @@ export default function ChatPage() {
               }
             />
 
-            {/* Messages */}
-            <MessageList
-              messages={messages}
-              currentUser={user}
-              onDeleteMessage={deleteMessage}
-              onEditMessage={editMessage}
-            />
-
-            {/* Message Input */}
-            <div ref={inputRef}>
-              <MessageInput
-                messageText={messageText}
-                onMessageChange={setMessageText}
-                onSendMessage={handleSendMessage}
-                onFileSelect={sendFileMessage}
-                clipboardImage={clipboardImage}
-                onSendClipboardImage={handleSendClipboardImage}
-                onCancelClipboardImage={cancelClipboardImage}
-                isUploading={isUploading}
+            <div className="chat-pattern flex flex-1 flex-col">
+              {/* Messages */}
+              <MessageList
+                messages={messages}
+                currentUser={user}
+                onDeleteMessage={deleteMessage}
+                onEditMessage={editMessage}
               />
+
+              {/* Message Input */}
+              <div ref={inputRef}>
+                <MessageInput
+                  messageText={messageText}
+                  onMessageChange={setMessageText}
+                  onSendMessage={handleSendMessage}
+                  onFileSelect={sendFileMessage}
+                  clipboardImage={clipboardImage}
+                  onSendClipboardImage={handleSendClipboardImage}
+                  onCancelClipboardImage={cancelClipboardImage}
+                  isUploading={isUploading}
+                />
+              </div>
             </div>
           </>
         ) : (

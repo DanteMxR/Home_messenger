@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MessageCircle, User, Lock, Loader2 } from 'lucide-react'
+import { Radio, User, Lock, Loader2, Eye, EyeOff } from 'lucide-react'
 import Iridescence from '@/component/Iridescence'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const { login, loading, error } = useAuth()
   const router = useRouter()
 
@@ -32,15 +33,15 @@ export default function LoginPage() {
       <div className="absolute inset-0 z-0">
         <Iridescence
           color={[0.5, 0.6, 0.8]}
-          mouseReact
+          mouseReact={false}
           amplitude={0.1}
           speed={1}
         />
       </div>
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-lg p-6 relative z-10">
+      <Card className="w-full max-w-md bg-card/90 text-card-foreground backdrop-blur-sm shadow-lg p-6 relative z-10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <MessageCircle className="h-12 w-12 text-blue-600" />
+            <Radio className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">Вход в мессенджер</CardTitle>
           <CardDescription>
@@ -52,7 +53,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label htmlFor="username">Имя пользователя</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="username"
                   type="text"
@@ -69,22 +70,29 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Введите пароль"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 pr-10"
                   required
                   disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-md">
                 {error}
               </div>
             )}
@@ -96,8 +104,8 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">Нет аккаунта? </span>
-            <Link href="/register" className="text-blue-600 hover:underline font-medium">
+            <span className="text-muted-foreground">Нет аккаунта? </span>
+            <Link href="/register" className="text-primary hover:underline font-medium">
               Зарегистрироваться
             </Link>
           </div>

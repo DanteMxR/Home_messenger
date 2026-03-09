@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, MessageCircle, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus, Shield, SquareKanban } from 'lucide-react'
+import { Search, Radio, Circle, Clock, X, ChevronLeft, ChevronRight, Users, Plus, Shield, SquareKanban } from 'lucide-react'
 import { ChatUser, User, GroupChat } from '@/types'
 import { formatTime, formatLastSeen, getLastMessagePreview, getUserInitials } from '@/utils'
 import { Button } from '@/components/ui/button'
@@ -52,7 +52,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {!isCollapsed ? (
             <>
               <h1 className="text-xl font-bold flex items-center text-foreground">
-                <MessageCircle className="mr-2 h-6 w-6 text-primary" />
+                <Radio className="mr-2 h-6 w-6 text-primary" />
                 Мессенджер
               </h1>
               <div className="flex items-center space-x-2">
@@ -292,14 +292,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       {/* Collapsed view */}
       {isCollapsed && (
-        <div className="flex flex-col items-center py-4 space-y-6">
-          <div className="flex flex-col items-center space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="flex flex-col items-center py-4 space-y-6">
+            <div className="flex flex-col items-center space-y-4">
             {[...directChats, ...groupChats].slice(0, 10).map((chat) => {
               const isGroup = (chat as GroupChat).isGroup;
               return (
                 <div
                   key={chat.id}
-                  className={`rounded-full p-1 cursor-pointer transition-all duration-200 ${
+                  className={`relative rounded-full p-1 cursor-pointer transition-all duration-200 ${
                     selectedUser?.id === chat.id 
                       ? 'bg-accent border-2 border-primary' 
                       : 'border-2 border-transparent hover:bg-accent'
@@ -333,6 +334,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       )}

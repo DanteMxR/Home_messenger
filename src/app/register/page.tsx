@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MessageCircle, Mail, Lock, User, Loader2 } from 'lucide-react'
+import { Radio, Lock, User, Loader2 } from 'lucide-react'
 import Iridescence from '@/component/Iridescence'
 
 export default function RegisterPage() {
@@ -48,15 +48,15 @@ export default function RegisterPage() {
       <div className="absolute inset-0 z-0">
         <Iridescence
           color={[0.5, 0.6, 0.8]}
-          mouseReact
+          mouseReact={false}
           amplitude={0.1}
           speed={1}
         />
       </div>
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-lg p-6 relative z-10">
+      <Card className="w-full max-w-md bg-card/90 text-card-foreground backdrop-blur-sm shadow-lg p-6 relative z-10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <MessageCircle className="h-12 w-12 text-blue-600" />
+            <Radio className="h-12 w-12 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold">Регистрация</CardTitle>
           <CardDescription>
@@ -68,7 +68,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="username">Имя пользователя</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="username"
                   type="text"
@@ -85,7 +85,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
@@ -102,7 +102,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -117,7 +117,7 @@ export default function RegisterPage() {
             </div>
 
             {displayError && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+              <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-md">
                 {displayError}
               </div>
             )}
@@ -129,8 +129,8 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">Уже есть аккаунт? </span>
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <span className="text-muted-foreground">Уже есть аккаунт? </span>
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Войти
             </Link>
           </div>
