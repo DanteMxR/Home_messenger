@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
         id: chat.id,
         name: chat.name || 'Без названия',
         isGroup: true,
+        creatorId: chat.creatorId,
         createdAt: chat.createdAt,
         updatedAt: chat.updatedAt,
         members: chat.members.map(member => member.user),
@@ -143,16 +144,17 @@ export async function POST(request: NextRequest) {
       const chat = await tx.chat.create({
         data: {
           name,
-          isGroup: true
+          isGroup: true,
+          creatorId: authUser.userId
         }
       });
 
       // Add all users to the chat
       await tx.chatMember.createMany({
-        data: userIds.map(userId => ({
-          userId,
+        data: userIds.map(uid => ({
+          userId: uid,
           chatId: chat.id,
-          role: 'member'
+          role: uid === authUser.userId ? 'owner' : 'member'
         }))
       });
 

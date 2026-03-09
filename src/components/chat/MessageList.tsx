@@ -83,7 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="flex-1 overflow-hidden chat-pattern">
       <ScrollArea className="h-full p-4">
         <div className="space-y-4 max-w-full">
           {messages.map((message) => (

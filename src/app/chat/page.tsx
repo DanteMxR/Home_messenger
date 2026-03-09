@@ -11,11 +11,13 @@ import {
   UserProfile, 
   SettingsDialog,
   EmptyState,
-  ClearConfirmDialog
+  ClearConfirmDialog,
+  DeleteConfirmDialog
 } from '@/components/chat'
 import { GroupChatDialog } from '@/components/chat/dialogs/GroupChatDialog'
 import { useChat, useMessages, useSettings, useClipboardImage, useMobile } from '@/hooks'
 import { User, ChatUser, GroupChat, Task } from '@/types'
+import { ChatService } from '@/services'
 import { Button } from '@/components/ui/button'
 import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -26,6 +28,7 @@ export default function ChatPage() {
   
   const { user, logout, isConnected } = useAuth()
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [messageText, setMessageText] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -127,6 +130,25 @@ export default function ChatPage() {
   const handleClearMessages = async () => {
     await clearMessages()
     setShowClearConfirm(false)
+  }
+
+  const handleDeleteChat = async () => {
+    if (!selectedUser) return
+
+    const isGroupChat = 'isGroup' in selectedUser && (selectedUser as GroupChat).isGroup
+    let success: boolean
+
+    if (isGroupChat) {
+      success = await ChatService.deleteGroupChat(selectedUser.id)
+    } else {
+      success = await ChatService.deleteDirectChat(selectedUser.id)
+    }
+
+    if (success) {
+      setSelectedUser(null)
+      setShowDeleteConfirm(false)
+      await fetchChats()
+    }
   }
 
   const handleCreateGroup = async (name: string, userIds: string[]) => {
@@ -248,11 +270,17 @@ export default function ChatPage() {
             <ChatHeader
               selectedUser={selectedUser}
               onClearMessages={() => setShowClearConfirm(true)}
+              onDeleteChat={() => setShowDeleteConfirm(true)}
               onBack={() => {
                 setSelectedUser(null)
                 if (isMobile) setSidebarOpen(true)
               }}
               isMobile={isMobile}
+              isGroupOwner={
+                'isGroup' in selectedUser && (selectedUser as GroupChat).isGroup
+                  ? (selectedUser as GroupChat).creatorId === user.id
+                  : false
+              }
             />
 
             {/* Messages */}
@@ -302,6 +330,25 @@ export default function ChatPage() {
         username={selectedUser?.username || ''}
         onConfirm={handleClearMessages}
         onCancel={() => setShowClearConfirm(false)}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        show={showDeleteConfirm}
+        chatName={
+          selectedUser
+            ? ('isGroup' in selectedUser && (selectedUser as GroupChat).isGroup
+                ? (selectedUser as GroupChat).name
+                : (selectedUser as User).username)
+            : ''
+        }
+        isGroup={!!(selectedUser && 'isGroup' in selectedUser && (selectedUser as GroupChat).isGroup)}
+        isOwner={
+          !!(selectedUser && 'isGroup' in selectedUser && (selectedUser as GroupChat).isGroup
+            && (selectedUser as GroupChat).creatorId === user.id)
+        }
+        onConfirm={handleDeleteChat}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
 
       {/* Group Chat Dialog */}

@@ -33,6 +33,7 @@ model Chat {
   id        String       @id @default(cuid())
   name      String?
   isGroup   Boolean      @default(false)
+  creatorId String?
   taskId    String?      @unique
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt

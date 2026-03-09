@@ -119,7 +119,7 @@ export default function TaskBoardPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Доска задач</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Доска задач</h1>
         <Button variant="outline" onClick={() => window.location.href = '/chat'}>
           Перейти в мессенджер
         </Button>
@@ -162,7 +162,7 @@ export default function TaskBoardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Создана: {new Date(board.createdAt).toLocaleDateString('ru-RU')}
                   </p>
                 </CardContent>
@@ -171,7 +171,7 @@ export default function TaskBoardPage() {
           </div>
           
           {boards.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <p>Нет доступных досок задач</p>
               <p className="text-sm mt-2">Создайте первую доску задач, чтобы начать</p>
             </div>
@@ -180,7 +180,7 @@ export default function TaskBoardPage() {
       ) : (
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">{selectedBoard.title}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedBoard.title}</h2>
             <Button variant="outline" onClick={() => setSelectedBoard(null)}>
               Назад к списку досок
             </Button>

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { MessageCircle, User, Lock, Loader2 } from 'lucide-react'
+import Iridescence from '@/component/Iridescence'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -27,8 +28,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundImage: 'url(/images/image.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundColor: '#f3f4f6' }}>
-      <Card className="w-full max-w-md bg-white shadow-lg p-6">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <Iridescence
+          color={[0.5, 0.6, 0.8]}
+          mouseReact
+          amplitude={0.1}
+          speed={1}
+        />
+      </div>
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-lg p-6 relative z-10">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <MessageCircle className="h-12 w-12 text-blue-600" />

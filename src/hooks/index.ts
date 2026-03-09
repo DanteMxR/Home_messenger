@@ -190,34 +190,27 @@ export const useMessages = (selectedUser: User | GroupChat | null): UseMessagesR
     setIsUploading(true)
     
     try {
-      let uploadResult;
-      if (isGroupChat) {
-        // Upload to group chat
-        uploadResult = await FileService.uploadFile(file, '', (selectedUser as GroupChat).id);
-      } else {
-        // Upload to direct chat
-        uploadResult = await FileService.uploadFile(file, (selectedUser as User).id, '');
-      }
+      const uploadResult = await FileService.uploadFile(file);
       
       if (uploadResult) {
         // Send file message through socket
         if (isGroupChat) {
           SocketService.sendGroupFileMessage(socket, {
-            content: uploadResult.message.content,
+            content: '',
             chatId: (selectedUser as GroupChat).id,
-            fileName: uploadResult.message.fileName!,
-            fileUrl: uploadResult.message.fileUrl!,
-            fileType: uploadResult.message.fileType!,
-            fileSize: uploadResult.message.fileSize!,
+            fileName: uploadResult.fileName,
+            fileUrl: uploadResult.fileUrl,
+            fileType: uploadResult.fileType,
+            fileSize: uploadResult.fileSize,
           });
         } else {
           SocketService.sendFileMessage(socket, {
-            content: uploadResult.message.content,
+            content: '',
             receiverId: (selectedUser as User).id,
-            fileName: uploadResult.message.fileName!,
-            fileUrl: uploadResult.message.fileUrl!,
-            fileType: uploadResult.message.fileType!,
-            fileSize: uploadResult.message.fileSize!,
+            fileName: uploadResult.fileName,
+            fileUrl: uploadResult.fileUrl,
+            fileType: uploadResult.fileType,
+            fileSize: uploadResult.fileSize,
           });
         }
       } else {

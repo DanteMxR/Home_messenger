@@ -16,6 +16,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID чата обязателен' }, { status: 400 });
     }
 
+    // Get the chat with creator info
+    const chat = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { creatorId: true }
+    });
+
+    if (!chat) {
+      return NextResponse.json({ error: 'Чат не найден' }, { status: 404 });
+    }
+
     // Check if user is a member of the chat
     const chatMember = await prisma.chatMember.findUnique({
       where: {
@@ -30,15 +40,38 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Вы не являетесь участником этого чата' }, { status: 403 });
     }
 
-    // For now, allow any member to delete the group chat
-    // In a more advanced implementation, you might want to restrict this to admins or creators
-    await prisma.chat.delete({
-      where: {
-        id: chatId
-      }
-    });
+    const isOwner = chat.creatorId === authUser.userId;
 
-    return NextResponse.json({ success: true });
+    if (isOwner) {
+      // Owner deletes the entire chat for everyone
+      await prisma.chat.delete({
+        where: { id: chatId }
+      });
+      return NextResponse.json({ success: true, action: 'deleted' });
+    } else {
+      // Non-owner leaves the group
+      await prisma.chatMember.delete({
+        where: {
+          userId_chatId: {
+            userId: authUser.userId,
+            chatId
+          }
+        }
+      });
+
+      // Check if any members remain
+      const remainingMembers = await prisma.chatMember.count({
+        where: { chatId }
+      });
+
+      if (remainingMembers === 0) {
+        await prisma.chat.delete({
+          where: { id: chatId }
+        });
+      }
+
+      return NextResponse.json({ success: true, action: 'left' });
+    }
   } catch (error) {
     console.error('Delete group chat error:', error);
     return NextResponse.json({ error: 'Внутренняя ошибка сервера' }, { status: 500 });

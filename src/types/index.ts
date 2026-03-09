@@ -52,6 +52,7 @@ export interface GroupChat {
   id: string
   name: string
   isGroup: boolean
+  creatorId?: string | null
   createdAt: Date
   updatedAt: Date
   members: User[]
@@ -136,8 +137,10 @@ export interface FileUploadData {
 }
 
 export interface FileUploadResponse {
-  message: Message
   fileUrl: string
+  fileName: string
+  fileType: string
+  fileSize: number
 }
 
 export interface AuthUser {

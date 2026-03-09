@@ -501,14 +501,14 @@ export default function TaskBoard({ board }: TaskBoardProps) {
       <div className="flex justify-end mb-6 space-x-2">
         <Button 
           variant="outline" 
-          className="border-gray-400 text-gray-800 hover:bg-gray-100"
+          className="border-gray-400 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={() => setShowMembersDialog(true)}
         >
           Участники доски
         </Button>
         <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="border-gray-400 text-gray-800 hover:bg-gray-100">Создать задачу</Button>
+            <Button variant="outline" className="border-gray-400 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Создать задачу</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -633,11 +633,11 @@ export default function TaskBoard({ board }: TaskBoardProps) {
         {STATUS_COLUMNS.map(column => (
           <div 
             key={column.id}
-            className={`${column.color} rounded-lg p-4 min-h-[500px] max-h-[600px] overflow-y-auto border border-gray-300 shadow-sm transition-colors duration-150`}
+            className={`${column.color} rounded-lg p-4 min-h-[500px] max-h-[600px] overflow-y-auto border border-gray-300 dark:border-gray-600 shadow-sm transition-colors duration-150`}
             onDrop={(e) => handleDrop(e, column.id)}
             onDragOver={handleDragOver}
           >
-            <h3 className="font-semibold mb-3 text-center text-gray-900 text-sm">{column.title}</h3>
+            <h3 className="font-semibold mb-3 text-center text-gray-900 dark:text-gray-100 text-sm">{column.title}</h3>
             <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2">
               {tasks
                 .filter(task => task.status === column.id)
@@ -660,13 +660,13 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                           {getPriorityLabel(task.priority)}
                         </Badge>
                         {task.dueDate && (
-                          <span className="text-xs text-gray-600">
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
                             {new Date(task.dueDate).toLocaleDateString('ru-RU')}
                           </span>
                         )}
                       </div>
                       {task.description && (
-                        <p className="text-sm text-gray-700 truncate">{task.description}</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{task.description}</p>
                       )}
                       <div className="mt-2 flex space-x-2">
                         <button 
@@ -699,7 +699,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                               console.error('Error handling task chat:', error);
                             }
                           }}
-                          className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 py-1 px-2 rounded border border-gray-400 mr-1"
+                          className="text-xs bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-1 px-2 rounded border border-gray-400 dark:border-gray-500 mr-1"
                         >
                           Чат задачи
                         </button>
@@ -732,14 +732,14 @@ export default function TaskBoard({ board }: TaskBoardProps) {
             <div className="space-y-4">
               <div>
                 <Label>Описание</Label>
-                <p className="text-gray-700 p-2 border border-gray-300 rounded-md min-h-[100px] bg-gray-50">
+                <p className="text-gray-700 dark:text-gray-300 p-2 border border-gray-300 dark:border-gray-600 rounded-md min-h-[100px] bg-gray-50 dark:bg-gray-800">
                   {viewingTask.description || 'Нет описания'}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Статус</Label>
-                  <p className="text-gray-700 p-2 border border-gray-300 rounded-md bg-gray-50">
+                  <p className="text-gray-700 dark:text-gray-300 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
                     {STATUS_COLUMNS.find(s => s.id === viewingTask.status)?.title || viewingTask.status}
                   </p>
                 </div>
@@ -752,7 +752,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
               </div>
               <div>
                 <Label>Участники</Label>
-                <div className="border border-gray-300 rounded-md p-2 bg-gray-50 max-h-32 overflow-y-auto">
+                <div className="border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-gray-50 dark:bg-gray-800 max-h-32 overflow-y-auto">
                   {viewingTask.assigneeIds && viewingTask.assigneeIds.length > 0 ? (
                     viewingTask.assigneeIds.map(assigneeId => {
                       const user = allUsers.find(u => u.id === assigneeId);
@@ -774,20 +774,20 @@ export default function TaskBoard({ board }: TaskBoardProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Создано</Label>
-                  <p className="text-gray-700 p-2 border border-gray-300 rounded-md bg-gray-50">
+                  <p className="text-gray-700 dark:text-gray-300 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
                     {new Date(viewingTask.createdAt).toLocaleDateString('ru-RU')}
                   </p>
                 </div>
                 <div>
                   <Label>Срок выполнения</Label>
-                  <p className="text-gray-700 p-2 border border-gray-300 rounded-md bg-gray-50">
+                  <p className="text-gray-700 dark:text-gray-300 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
                     {viewingTask.dueDate ? new Date(viewingTask.dueDate).toLocaleDateString('ru-RU') : 'Не указан'}
                   </p>
                 </div>
               </div>
               <div>
                 <Label>Прикрепленные файлы</Label>
-                <div className="border border-gray-300 rounded-md p-2 bg-gray-50 max-h-40 overflow-y-auto">
+                <div className="border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-gray-50 dark:bg-gray-800 max-h-40 overflow-y-auto">
                   {viewingTask.messages && viewingTask.messages.length > 0 ? (
                     viewingTask.messages
                       .filter(msg => msg.fileUrl) // Only show messages with file attachments
@@ -812,7 +812,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="flex-1 border-gray-400 text-gray-800 hover:bg-gray-100"
+                  className="flex-1 border-gray-400 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     setViewingTask(null);
                     setEditingTask(viewingTask); // Switch to edit mode
@@ -823,7 +823,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="flex-1 border-gray-400 text-gray-800 hover:bg-gray-100"
+                  className="flex-1 border-gray-400 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => setViewingTask(null)}
                 >
                   Закрыть
@@ -873,7 +873,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                         onChange={() => toggleAssignee(user.id)}
                         className="mr-2"
                       />
-                      <label htmlFor={`assignee-${user.id}`} className="text-gray-700">
+                      <label htmlFor={`assignee-${user.id}`} className="text-gray-700 dark:text-gray-300">
                         {user.username}
                       </label>
                     </div>
@@ -969,7 +969,7 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  className="flex-1 border-gray-400 text-gray-800 hover:bg-gray-100"
+                  className="flex-1 border-gray-400 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => {
                     setEditingTask(null);
                     setAttachedFiles([]); // Clear attached files when cancelling

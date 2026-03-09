@@ -2,22 +2,26 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Circle, Trash2, ArrowLeft, Users } from 'lucide-react'
+import { Circle, Trash2, ArrowLeft, Users, LogOut } from 'lucide-react'
 import { User, GroupChat } from '@/types'
 import { formatLastSeen, getUserInitials } from '@/utils'
 
 interface ChatHeaderProps {
   selectedUser: User | GroupChat
   onClearMessages: () => void
+  onDeleteChat: () => void
   onBack?: () => void
   isMobile?: boolean
+  isGroupOwner?: boolean
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   selectedUser,
   onClearMessages,
+  onDeleteChat,
   onBack,
-  isMobile = false
+  isMobile = false,
+  isGroupOwner = false
 }) => {
   // Check if it's a group chat
   const isGroupChat = 'isGroup' in selectedUser && selectedUser.isGroup;
@@ -72,15 +76,35 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           </div>
         </div>
         
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={onClearMessages}
-          className="flex items-center"
-        >
-          <Trash2 className="h-4 w-4 mr-1" />
-          Очистить
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClearMessages}
+            className="flex items-center"
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Очистить
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDeleteChat}
+            className="flex items-center"
+          >
+            {isGroupChat && !isGroupOwner ? (
+              <>
+                <LogOut className="h-4 w-4 mr-1" />
+                Покинуть
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-1" />
+                Удалить
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   )

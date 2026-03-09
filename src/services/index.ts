@@ -108,6 +108,36 @@ export class ChatService {
   }
 
   /**
+   * Delete a group chat (owner deletes for all, member leaves)
+   */
+  static async deleteGroupChat(chatId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/group-chats/delete?chatId=${chatId}`, {
+        method: 'DELETE',
+      })
+      return response.ok
+    } catch (error) {
+      console.error('Error deleting group chat:', error)
+      return false
+    }
+  }
+
+  /**
+   * Delete a direct chat (clears all messages)
+   */
+  static async deleteDirectChat(userId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/messages/clear?userId=${userId}`, {
+        method: 'DELETE',
+      })
+      return response.ok
+    } catch (error) {
+      console.error('Error deleting direct chat:', error)
+      return false
+    }
+  }
+
+  /**
    * Edit a specific message
    */
   static async editMessage(messageId: string, content: string): Promise<Message | null> {
@@ -140,20 +170,11 @@ export class FileService {
    * Upload a file with message data
    */
   static async uploadFile(
-    file: File, 
-    receiverId: string = '', 
-    chatId: string = '',
-    content: string = ''
+    file: File
   ): Promise<FileUploadResponse | null> {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      if (receiverId) {
-        formData.append('receiverId', receiverId)
-      } else if (chatId) {
-        formData.append('chatId', chatId)
-      }
-      formData.append('content', content)
 
       const response = await fetch('/api/upload', {
         method: 'POST',
