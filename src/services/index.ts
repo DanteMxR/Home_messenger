@@ -338,7 +338,7 @@ export class SocketService {
   }
 
   static sendGroupFileMessage(
-    socket: any, 
+    socket: any,
     messageData: {
       content: string
       chatId: string
@@ -346,12 +346,55 @@ export class SocketService {
       fileUrl: string
       fileType: string
       fileSize: number
+      audioDuration?: number
     }
   ): void {
     if (!socket?.connected) {
       throw new Error('Socket not connected')
     }
-    
+
+    socket.emit('file:send', messageData)
+  }
+
+  /**
+   * Send an audio message via socket (direct)
+   */
+  static sendAudioMessage(
+    socket: any,
+    messageData: {
+      content: string
+      receiverId: string
+      fileName: string
+      fileUrl: string
+      fileType: string
+      fileSize: number
+      audioDuration: number
+    }
+  ): void {
+    if (!socket?.connected) {
+      throw new Error('Socket not connected')
+    }
+    socket.emit('file:send', messageData)
+  }
+
+  /**
+   * Send an audio message to group via socket
+   */
+  static sendGroupAudioMessage(
+    socket: any,
+    messageData: {
+      content: string
+      chatId: string
+      fileName: string
+      fileUrl: string
+      fileType: string
+      fileSize: number
+      audioDuration: number
+    }
+  ): void {
+    if (!socket?.connected) {
+      throw new Error('Socket not connected')
+    }
     socket.emit('file:send', messageData)
   }
 

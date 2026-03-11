@@ -33,6 +33,7 @@ export interface Message {
   fileUrl?: string | null
   fileType?: string | null
   fileSize?: number | null
+  audioDuration?: number | null
 }
 
 // Enhanced chat interface with last message and unread count
@@ -162,6 +163,7 @@ export interface UseMessagesReturn {
   messages: Message[]
   sendMessage: (content: string) => void
   sendFileMessage: (file: File) => void
+  sendAudioMessage: (blob: Blob, duration: number) => void
   clearMessages: () => Promise<void>
   isUploading: boolean
   refreshMessages: () => Promise<void>

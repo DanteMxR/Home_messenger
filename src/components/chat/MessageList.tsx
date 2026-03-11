@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { File, Download, Edit, Trash2, Check, X } from 'lucide-react'
 import { Message, User } from '@/types'
-import { formatTime, formatFileSize, isImageFile, getUserInitials } from '@/utils'
+import { formatTime, formatFileSize, isImageFile, isAudioFile, getUserInitials } from '@/utils'
+import { AudioPlayer } from './AudioPlayer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -110,8 +111,8 @@ export const MessageList: React.FC<MessageListProps> = ({
               <div
                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative cursor-pointer transition-colors hover:opacity-95 ${
                   message.senderId === currentUser?.id
-                    ? 'bg-primary/75 dark:bg-primary/65 text-primary-foreground'
-                    : 'bg-muted/90 text-foreground'
+                    ? 'bg-primary dark:bg-primary text-black dark:text-white'
+                    : 'bg-muted text-foreground'
                 } ${message.fileName && message.fileUrl && isImageFile(message.fileType) ? '!max-w-full' : ''}`}
                 onClick={(e) => {
                   // Prevent click event when clicking on links or buttons inside the message
@@ -153,12 +154,19 @@ export const MessageList: React.FC<MessageListProps> = ({
                 {/* File attachment */}
                 {message.fileName && message.fileUrl ? (
                   <div className="mb-2">
-                    {isImageFile(message.fileType) ? (
+                    {isAudioFile(message.fileType) ? (
+                      // Audio message player
+                      <AudioPlayer
+                        src={message.fileUrl}
+                        duration={message.audioDuration}
+                        isOwn={message.senderId === currentUser?.id}
+                      />
+                    ) : isImageFile(message.fileType) ? (
                       // Image preview
                       <div className="mb-2 flex justify-center">
-                        <img 
-                          src={message.fileUrl} 
-                          alt={message.fileName} 
+                        <img
+                          src={message.fileUrl}
+                          alt={message.fileName}
                           className="max-w-full max-h-64 rounded object-contain"
                         />
                       </div>
@@ -205,7 +213,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 
                 <p
                   className={`text-xs mt-1 ${
-                    message.senderId === currentUser?.id ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                    message.senderId === currentUser?.id ? 'text-black/60 dark:text-white/60' : 'text-muted-foreground'
                   }`}
                 >
                   {formatTime(message.createdAt)}

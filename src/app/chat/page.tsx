@@ -18,6 +18,7 @@ import { GroupChatDialog } from '@/components/chat/dialogs/GroupChatDialog'
 import { useChat, useMessages, useSettings, useClipboardImage, useMobile } from '@/hooks'
 import { User, ChatUser, GroupChat, Task } from '@/types'
 import { ChatService } from '@/services'
+import { CallProvider } from '@/components/call/CallProvider'
 import { Button } from '@/components/ui/button'
 import { Menu, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -71,6 +72,7 @@ export default function ChatPage() {
     messages,
     sendMessage,
     sendFileMessage,
+    sendAudioMessage,
     clearMessages,
     isUploading,
     refreshMessages,
@@ -199,6 +201,7 @@ export default function ChatPage() {
   }
 
   return (
+    <CallProvider>
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Mobile sidebar overlay */}
       {isMobile && sidebarOpen && (
@@ -299,6 +302,7 @@ export default function ChatPage() {
                   onMessageChange={setMessageText}
                   onSendMessage={handleSendMessage}
                   onFileSelect={sendFileMessage}
+                  onSendAudio={sendAudioMessage}
                   clipboardImage={clipboardImage}
                   onSendClipboardImage={handleSendClipboardImage}
                   onCancelClipboardImage={cancelClipboardImage}
@@ -372,5 +376,6 @@ export default function ChatPage() {
         isLoading={creatingGroup}
       />
     </div>
+    </CallProvider>
   )
 }

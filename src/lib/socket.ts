@@ -154,7 +154,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             return;
           }
 
-          const { content, receiverId, chatId, fileName, fileUrl, fileType, fileSize } = data
+          const { content, receiverId, chatId, fileName, fileUrl, fileType, fileSize, audioDuration } = data
 
           // Save message with file to database
           const message = await prisma.message.create({
@@ -167,6 +167,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
               fileUrl,
               fileType,
               fileSize,
+              audioDuration: audioDuration || null,
             },
             include: {
               sender: {
@@ -277,6 +278,114 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
             username: socket.username
           })
         }
+      })
+
+      // ===== Call signaling events =====
+
+      // Initiate a call
+      socket.on('call:initiate', async (data) => {
+        if (!socket.userId) return
+        const { callId, targetId, chatId, type, isGroup } = data
+
+        // Get caller info
+        const caller = await prisma.user.findUnique({
+          where: { id: socket.userId },
+          select: { id: true, username: true, avatar: true }
+        })
+        if (!caller) return
+
+        const payload = {
+          callId,
+          callerId: socket.userId,
+          callerUsername: caller.username,
+          callerAvatar: caller.avatar,
+          type,
+          isGroup: !!isGroup,
+          chatId,
+        }
+
+        if (isGroup && chatId) {
+          // Group call: notify all members in the chat room
+          socket.to(`chat:${chatId}`).emit('call:incoming', payload)
+        } else if (targetId) {
+          // Direct call: notify target user
+          io.to(`user:${targetId}`).emit('call:incoming', payload)
+        }
+      })
+
+      // Accept a call
+      socket.on('call:accept', (data) => {
+        if (!socket.userId) return
+        const { callId, type } = data
+
+        // Notify all participants that call was accepted
+        socket.broadcast.emit('call:accepted', {
+          callId,
+          userId: socket.userId,
+          type,
+        })
+      })
+
+      // Decline a call
+      socket.on('call:decline', (data) => {
+        if (!socket.userId) return
+        socket.broadcast.emit('call:declined', {
+          callId: data.callId,
+          userId: socket.userId,
+        })
+      })
+
+      // End a call
+      socket.on('call:end', (data) => {
+        if (!socket.userId) return
+        socket.broadcast.emit('call:ended', {
+          callId: data.callId,
+          userId: socket.userId,
+        })
+      })
+
+      // WebRTC SDP offer
+      socket.on('call:offer', (data) => {
+        if (!socket.userId) return
+        const { callId, sdp, targetUserId } = data
+        io.to(`user:${targetUserId}`).emit('call:offer', {
+          callId,
+          sdp,
+          fromUserId: socket.userId,
+        })
+      })
+
+      // WebRTC SDP answer
+      socket.on('call:answer', (data) => {
+        if (!socket.userId) return
+        const { callId, sdp, targetUserId } = data
+        io.to(`user:${targetUserId}`).emit('call:answer', {
+          callId,
+          sdp,
+          fromUserId: socket.userId,
+        })
+      })
+
+      // WebRTC ICE candidate
+      socket.on('call:ice-candidate', (data) => {
+        if (!socket.userId) return
+        const { callId, candidate, targetUserId } = data
+        io.to(`user:${targetUserId}`).emit('call:ice-candidate', {
+          callId,
+          candidate,
+          fromUserId: socket.userId,
+        })
+      })
+
+      // Toggle media notification
+      socket.on('call:toggle-media', (data) => {
+        if (!socket.userId) return
+        socket.broadcast.emit('call:media-toggled', {
+          callId: data.callId,
+          userId: socket.userId,
+          mediaType: data.mediaType,
+          enabled: data.enabled,
+        })
       })
 
       // Handle disconnect

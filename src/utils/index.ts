@@ -44,6 +44,14 @@ export const isImageFile = (fileType: string | null | undefined): boolean => {
 }
 
 /**
+ * Check if file type is audio
+ */
+export const isAudioFile = (fileType: string | null | undefined): boolean => {
+  if (!fileType) return false
+  return fileType.startsWith('audio/')
+}
+
+/**
  * Get preview text for last message in chat list
  */
 export const getLastMessagePreview = (lastMessage: {

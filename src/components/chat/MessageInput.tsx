@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Paperclip, Send, Smile, X } from 'lucide-react'
 import { ClipboardImagePreview } from '@/types'
+import { AudioRecorder } from './AudioRecorder'
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 
@@ -12,6 +13,7 @@ interface MessageInputProps {
   onMessageChange: (text: string) => void
   onSendMessage: () => void
   onFileSelect: (file: File) => void
+  onSendAudio: (blob: Blob, duration: number) => void
   clipboardImage: ClipboardImagePreview | null
   onSendClipboardImage: () => void
   onCancelClipboardImage: () => void
@@ -24,6 +26,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onMessageChange,
   onSendMessage,
   onFileSelect,
+  onSendAudio,
   clipboardImage,
   onSendClipboardImage,
   onCancelClipboardImage,
@@ -153,13 +156,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               >
                 <Smile className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={onSendMessage}
-                disabled={!canSend || disabled}
-                className="size-9 rounded-full border border-border bg-secondary p-0 text-secondary-foreground shadow-md hover:bg-secondary/80"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              {messageText.trim() ? (
+                <Button
+                  onClick={onSendMessage}
+                  disabled={!canSend || disabled}
+                  className="size-9 rounded-full border border-border bg-secondary p-0 text-secondary-foreground shadow-md hover:bg-secondary/80"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              ) : (
+                <AudioRecorder onSend={onSendAudio} disabled={controlsDisabled} />
+              )}
 
               {/* Emoji picker */}
               {showEmojiPicker && (

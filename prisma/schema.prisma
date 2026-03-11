@@ -68,8 +68,9 @@ model Message {
   fileName   String?
   fileSize   Int?
   fileType   String?
-  fileUrl    String?
-  taskId     String?
+  fileUrl        String?
+  audioDuration  Float?
+  taskId         String?
   files      File[]
   task       Task?    @relation(fields: [taskId], references: [id])
   sender     User     @relation("UserSentMessages", fields: [senderId], references: [id], onDelete: Cascade)

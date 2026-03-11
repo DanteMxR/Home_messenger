@@ -2,9 +2,10 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Circle, Trash2, ArrowLeft, Users, LogOut } from 'lucide-react'
+import { Circle, Trash2, ArrowLeft, Users, LogOut, Phone, Video } from 'lucide-react'
 import { User, GroupChat } from '@/types'
 import { formatLastSeen, getUserInitials } from '@/utils'
+import { useCallContext } from '@/components/call/CallProvider'
 
 interface ChatHeaderProps {
   selectedUser: User | GroupChat
@@ -23,6 +24,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMobile = false,
   isGroupOwner = false
 }) => {
+  const { initiateCall, callState } = useCallContext()
+
   // Check if it's a group chat
   const isGroupChat = 'isGroup' in selectedUser && selectedUser.isGroup;
 
@@ -77,15 +80,75 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Audio call button */}
           <Button
             variant="outline"
             size="sm"
-            onClick={onClearMessages}
+            onClick={() => {
+              if (isGroupChat) {
+                initiateCall(
+                  selectedUser.id,
+                  selectedUser.name || 'Группа',
+                  null,
+                  'audio',
+                  true,
+                  selectedUser.id
+                )
+              } else {
+                initiateCall(
+                  selectedUser.id,
+                  selectedUser.username || '',
+                  selectedUser.avatar,
+                  'audio'
+                )
+              }
+            }}
+            disabled={callState.status !== 'idle'}
             className="flex items-center"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Очистить
+            <Phone className="h-4 w-4" />
           </Button>
+
+          {/* Video call button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (isGroupChat) {
+                initiateCall(
+                  selectedUser.id,
+                  selectedUser.name || 'Группа',
+                  null,
+                  'video',
+                  true,
+                  selectedUser.id
+                )
+              } else {
+                initiateCall(
+                  selectedUser.id,
+                  selectedUser.username || '',
+                  selectedUser.avatar,
+                  'video'
+                )
+              }
+            }}
+            disabled={callState.status !== 'idle'}
+            className="flex items-center"
+          >
+            <Video className="h-4 w-4" />
+          </Button>
+
+          {isGroupChat && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearMessages}
+              className="flex items-center"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Очистить
+            </Button>
+          )}
           <Button
             variant="destructive"
             size="sm"

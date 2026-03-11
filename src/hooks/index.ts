@@ -235,6 +235,82 @@ export const useMessages = (selectedUser: User | GroupChat | null): UseMessagesR
     }
   }, [selectedUser, user, isConnected])
 
+  const sendAudioMessage = useCallback(async (blob: Blob, duration: number) => {
+    if (!selectedUser || !user) return
+
+    const socket = getSocket()
+    if (!socket || !isConnected) {
+      alert('Нет подключения к серверу. Проверьте соединение.')
+      return
+    }
+
+    const isGroupChat = (selectedUser as GroupChat).isGroup
+    const file = new File([blob], `audio_${Date.now()}.webm`, { type: 'audio/webm' })
+
+    // Create temporary message
+    const tempMessage = createTempMessage(
+      '',
+      user.id,
+      user.username,
+      isGroupChat ? undefined : (selectedUser as User).id,
+      user.avatar,
+      {
+        fileName: file.name,
+        fileUrl: URL.createObjectURL(blob),
+        fileType: 'audio/webm',
+        fileSize: blob.size
+      }
+    )
+    // Add audioDuration to temp message
+    ;(tempMessage as any).audioDuration = duration
+
+    setMessages(prev => [...prev, tempMessage])
+    setIsUploading(true)
+
+    try {
+      const uploadResult = await FileService.uploadFile(file)
+
+      if (uploadResult) {
+        if (isGroupChat) {
+          SocketService.sendGroupAudioMessage(socket, {
+            content: '',
+            chatId: (selectedUser as GroupChat).id,
+            fileName: uploadResult.fileName,
+            fileUrl: uploadResult.fileUrl,
+            fileType: uploadResult.fileType,
+            fileSize: uploadResult.fileSize,
+            audioDuration: duration,
+          })
+        } else {
+          SocketService.sendAudioMessage(socket, {
+            content: '',
+            receiverId: (selectedUser as User).id,
+            fileName: uploadResult.fileName,
+            fileUrl: uploadResult.fileUrl,
+            fileType: uploadResult.fileType,
+            fileSize: uploadResult.fileSize,
+            audioDuration: duration,
+          })
+        }
+      } else {
+        setMessages(prev => {
+          const updated = prev.filter(m => m.id !== tempMessage.id)
+          cleanupObjectURL(tempMessage.fileUrl!)
+          return updated
+        })
+      }
+    } catch (error) {
+      console.error('Audio upload error:', error)
+      setMessages(prev => {
+        const updated = prev.filter(m => m.id !== tempMessage.id)
+        cleanupObjectURL(tempMessage.fileUrl!)
+        return updated
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }, [selectedUser, user, isConnected])
+
   const clearMessages = useCallback(async () => {
     if (!selectedUser) return
 
@@ -334,11 +410,12 @@ export const useMessages = (selectedUser: User | GroupChat | null): UseMessagesR
     messages,
     sendMessage,
     sendFileMessage,
+    sendAudioMessage,
     clearMessages,
     isUploading,
     refreshMessages,
-    deleteMessage, // Add delete function to the return object
-    editMessage    // Add edit function to the return object
+    deleteMessage,
+    editMessage
   }
 }
 
@@ -375,10 +452,10 @@ export const useSettings = (): UseSettingsReturn => {
     }))
   }, [theme])
 
-  // Load saved settings on mount
+  // Load saved settings on mount (exclude darkMode - it comes from ThemeContext)
   useEffect(() => {
-    const savedSettings = SettingsService.getSettings()
-    setSettings(prev => ({ ...prev, ...savedSettings }))
+    const { darkMode: _, ...otherSettings } = SettingsService.getSettings()
+    setSettings(prev => ({ ...prev, ...otherSettings }))
   }, [])
 
   const handleSettingsChange = useCallback((key: keyof Settings, value: any) => {
