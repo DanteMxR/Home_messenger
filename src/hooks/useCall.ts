@@ -209,22 +209,51 @@ export const useCall = (currentUserId: string | undefined) => {
   }, [webRTC])
 
   // Toggle video
-  const toggleVideo = useCallback(() => {
-    setCallState(prev => {
-      const newVideoOff = !prev.isVideoOff
-      webRTC.toggleVideo(!newVideoOff)
+  const toggleVideo = useCallback(async () => {
+    const state = callStateRef.current
+    const newVideoOff = !state.isVideoOff
 
-      const socket = getSocket()
-      if (socket && prev.callId) {
-        socket.emit('call:toggle-media', {
-          callId: prev.callId,
-          mediaType: 'video',
-          enabled: !newVideoOff,
-        })
+    if (!newVideoOff) {
+      // Enabling video
+      const hasVideoTrack = (webRTC.localStreamRef.current?.getVideoTracks().length ?? 0) > 0
+      if (!hasVideoTrack) {
+        try {
+          await webRTC.addVideoTrack()
+          // Renegotiate with all peers so they receive our video
+          const socket = getSocket()
+          if (socket && state.callId) {
+            for (const participant of state.participants) {
+              const offer = await webRTC.createOffer(participant.userId)
+              if (offer) {
+                socket.emit('call:offer', {
+                  callId: state.callId,
+                  sdp: offer,
+                  targetUserId: participant.userId,
+                })
+              }
+            }
+          }
+        } catch {
+          console.error('Failed to access camera')
+          return
+        }
+      } else {
+        webRTC.toggleVideo(true)
       }
+    } else {
+      webRTC.toggleVideo(false)
+    }
 
-      return { ...prev, isVideoOff: newVideoOff }
-    })
+    const socket = getSocket()
+    if (socket && state.callId) {
+      socket.emit('call:toggle-media', {
+        callId: state.callId,
+        mediaType: 'video',
+        enabled: !newVideoOff,
+      })
+    }
+
+    setCallState(prev => ({ ...prev, isVideoOff: newVideoOff }))
   }, [webRTC])
 
   // Socket event listeners

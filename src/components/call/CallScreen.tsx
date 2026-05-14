@@ -23,7 +23,9 @@ export const CallScreen: React.FC<CallScreenProps> = ({
 }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [, forceUpdate] = useState(0)
 
   // Set up local video
   useEffect(() => {
@@ -32,12 +34,24 @@ export const CallScreen: React.FC<CallScreenProps> = ({
     }
   }, [localStream, callState.isVideoOff])
 
-  // Set up remote video
+  // Set up remote video/audio and listen for new tracks
   useEffect(() => {
     const participant = callState.participants.find(p => p.stream)
-    if (remoteVideoRef.current && participant?.stream) {
-      remoteVideoRef.current.srcObject = participant.stream
+    if (!participant?.stream) return
+
+    const stream = participant.stream
+
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = stream
     }
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = stream
+    }
+
+    // Re-render when a new track is added (e.g. video added mid-call)
+    const handleTrackAdded = () => forceUpdate(n => n + 1)
+    stream.addEventListener('addtrack', handleTrackAdded)
+    return () => stream.removeEventListener('addtrack', handleTrackAdded)
   }, [callState.participants])
 
   // Timer
@@ -59,25 +73,31 @@ export const CallScreen: React.FC<CallScreenProps> = ({
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  const isVideoCall = callState.type === 'video'
   const participantName = callState.participants[0]?.username || callState.caller?.username || ''
   const participantAvatar = callState.participants[0]?.avatar || callState.caller?.avatar
   const hasRemoteStream = callState.participants.some(p => p.stream)
+  const remoteHasVideo = callState.participants.some(
+    p => p.stream && p.stream.getVideoTracks().some(t => t.readyState === 'live')
+  )
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-gray-900 text-white">
-      {/* Main area */}
-      <div className="relative flex flex-1 items-center justify-center">
-        {/* Remote video / avatar */}
-        {isVideoCall && hasRemoteStream ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex flex-col items-center gap-4">
+    <div className="fixed inset-0 z-[100] bg-gray-900 text-white">
+      {/* Hidden audio element for audio calls */}
+      <audio ref={remoteAudioRef} autoPlay />
+
+      {/* Full-screen area */}
+      <div className="relative h-full w-full overflow-hidden">
+        {/* Remote video (always in DOM for stream attachment, visible when remote has video) */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className={remoteHasVideo ? "h-full w-full object-cover" : "hidden"}
+        />
+
+        {/* Avatar / status when remote has no video */}
+        {!remoteHasVideo && (
+          <div className="flex h-full flex-col items-center justify-center gap-4">
             <Avatar className="h-28 w-28">
               {participantAvatar ? (
                 <AvatarImage src={participantAvatar} alt={participantName} />
@@ -95,20 +115,6 @@ export const CallScreen: React.FC<CallScreenProps> = ({
                   ? formatElapsed(elapsed)
                   : 'Подключение...'}
             </p>
-          </div>
-        )}
-
-        {/* Local video (small PiP) */}
-        {isVideoCall && !callState.isVideoOff && (
-          <div className="absolute bottom-24 right-4 h-40 w-28 overflow-hidden rounded-xl border-2 border-white/20 shadow-lg">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="h-full w-full object-cover"
-              style={{ transform: 'scaleX(-1)' }}
-            />
           </div>
         )}
 
@@ -137,18 +143,34 @@ export const CallScreen: React.FC<CallScreenProps> = ({
             ))}
           </div>
         )}
-      </div>
 
-      {/* Controls bar */}
-      <div className="flex-shrink-0 bg-gray-900/80 px-4 py-6 backdrop-blur-sm">
-        <CallControls
-          isMuted={callState.isMuted}
-          isVideoOff={callState.isVideoOff}
-          showVideoToggle={true}
-          onToggleMute={onToggleMute}
-          onToggleVideo={onToggleVideo}
-          onEndCall={onEndCall}
-        />
+        {/* Local video (small PiP) */}
+        {!callState.isVideoOff && (
+          <div className="absolute right-4 top-4 h-40 w-28 overflow-hidden rounded-xl border-2 border-white/20 shadow-lg">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="h-full w-full object-cover"
+              style={{ transform: 'scaleX(-1)' }}
+            />
+          </div>
+        )}
+
+        {/* Floating controls with gradient */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center pb-8 pt-16"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)' }}
+        >
+          <CallControls
+            isMuted={callState.isMuted}
+            isVideoOff={callState.isVideoOff}
+            showVideoToggle={true}
+            onToggleMute={onToggleMute}
+            onToggleVideo={onToggleVideo}
+            onEndCall={onEndCall}
+          />
+        </div>
       </div>
     </div>
   )

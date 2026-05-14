@@ -24,40 +24,38 @@ export const CallControls: React.FC<CallControlsProps> = ({
   return (
     <div className="flex items-center justify-center gap-4">
       {/* Mute toggle */}
-      <Button
-        variant="outline"
-        size="icon"
+      <button
         onClick={onToggleMute}
-        className={`h-12 w-12 rounded-full ${
-          isMuted ? 'bg-red-500/20 text-red-500 border-red-500/50 hover:bg-red-500/30' : 'hover:bg-accent'
+        className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+          isMuted
+            ? 'border-red-500/60 bg-red-500/30 text-red-400 hover:bg-red-500/40'
+            : 'border-white/25 bg-white/15 text-white hover:bg-white/25'
         }`}
       >
         {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-      </Button>
+      </button>
 
       {/* Video toggle */}
       {showVideoToggle && (
-        <Button
-          variant="outline"
-          size="icon"
+        <button
           onClick={onToggleVideo}
-          className={`h-12 w-12 rounded-full ${
-            isVideoOff ? 'bg-red-500/20 text-red-500 border-red-500/50 hover:bg-red-500/30' : 'hover:bg-accent'
+          className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+            isVideoOff
+              ? 'border-red-500/60 bg-red-500/30 text-red-400 hover:bg-red-500/40'
+              : 'border-white/25 bg-white/15 text-white hover:bg-white/25'
           }`}
         >
           {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
-        </Button>
+        </button>
       )}
 
       {/* End call */}
-      <Button
-        variant="destructive"
-        size="icon"
+      <button
         onClick={onEndCall}
-        className="h-14 w-14 rounded-full"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white transition-colors hover:bg-red-700"
       >
         <PhoneOff className="h-6 w-6" />
-      </Button>
+      </button>
     </div>
   )
 }

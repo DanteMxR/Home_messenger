@@ -187,7 +187,7 @@ export default function BoardMembersDialog({
                     id="user-select"
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground"
                   >
                     <option value="">Выберите пользователя</option>
                     {availableUsers.map(user => (
@@ -204,7 +204,7 @@ export default function BoardMembersDialog({
                     id="role-select"
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value as 'member' | 'admin')}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground"
                   >
                     <option value="member">Участник</option>
                     <option value="admin">Администратор</option>
@@ -223,9 +223,9 @@ export default function BoardMembersDialog({
               </div>
             </div>
           ) : (
-            <div className="border rounded-lg p-4 bg-gray-50">
+            <div className="border rounded-lg p-4 bg-muted/50">
               <h3 className="font-medium mb-3">Участники доски</h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Только владельцы и администраторы доски могут добавлять новых участников.
               </p>
             </div>
@@ -246,13 +246,13 @@ export default function BoardMembersDialog({
             {loading ? (
               <div className="text-center py-4">Загрузка участников...</div>
             ) : filteredMembers.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">Нет участников</div>
+              <div className="text-center py-4 text-muted-foreground">Нет участников</div>
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {filteredMembers.map(member => (
                   <div 
                     key={member.id} 
-                    className="flex justify-between items-center p-3 border rounded-lg bg-gray-50"
+                    className="flex justify-between items-center p-3 border rounded-lg bg-muted/40"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="font-medium">{member.user.username}</div>
@@ -267,7 +267,7 @@ export default function BoardMembersDialog({
                          member.role === 'admin' ? 'Админ' : 'Участник'}
                       </Badge>
                       {member.userId === boardCreatorId && (
-                        <span className="text-xs text-gray-500">(создатель)</span>
+                        <span className="text-xs text-muted-foreground">(создатель)</span>
                       )}
                     </div>
                     
@@ -277,7 +277,7 @@ export default function BoardMembersDialog({
                           <select
                             value={member.role}
                             onChange={(e) => handleUpdateRole(member.userId, e.target.value as 'member' | 'admin')}
-                            className="p-1 border border-gray-300 rounded text-sm"
+                            className="p-1 border border-input rounded text-sm bg-background text-foreground"
                             disabled={member.role === 'owner'}
                           >
                             <option value="member">Участник</option>
@@ -306,7 +306,7 @@ export default function BoardMembersDialog({
                       )}
                       
                       {(!currentUserRole || (currentUserRole !== 'owner' && currentUserRole !== 'admin')) && (
-                        <span className="text-xs text-gray-500 italic">
+                        <span className="text-xs text-muted-foreground italic">
                           Только администраторы могут управлять участниками
                         </span>
                       )}

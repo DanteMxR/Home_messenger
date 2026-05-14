@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     
     if (!authUser || !authUser.userId) {
       return NextResponse.json(
-        { error: 'Неавторизованный доступ' },
+        { error: 'РќРµР°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹Р№ РґРѕСЃС‚СѓРї' },
         { status: 401 }
       );
     }
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get tasks error:', error);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°' },
       { status: 500 }
     );
   }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     
     if (!authUser || !authUser.userId) {
       return NextResponse.json(
-        { error: 'Неавторизованный доступ' },
+        { error: 'РќРµР°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹Р№ РґРѕСЃС‚СѓРї' },
         { status: 401 }
       );
     }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     if (!board) {
       return NextResponse.json(
-        { error: 'Доска не найдена' },
+        { error: 'Р”РѕСЃРєР° РЅРµ РЅР°Р№РґРµРЅР°' },
         { status: 404 }
       );
     }
@@ -207,7 +207,6 @@ export async function POST(request: NextRequest) {
           taskId: task.id,
           userId,
         })),
-        skipDuplicates: true,
       });
       
       // Re-fetch the task with updated assignees
@@ -255,26 +254,26 @@ export async function POST(request: NextRequest) {
       });
       
       return NextResponse.json({ 
-        message: 'Задача успешно создана', 
+        message: 'Р—Р°РґР°С‡Р° СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅР°', 
         task: updatedTask 
       });
     }
 
     return NextResponse.json({ 
-      message: 'Задача успешно создана', 
+      message: 'Р—Р°РґР°С‡Р° СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅР°', 
       task 
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Неверные данные', details: error.issues },
+        { error: 'РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ', details: error.issues },
         { status: 400 }
       );
     }
 
     console.error('Create task error:', error);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°' },
       { status: 500 }
     );
   }
@@ -286,7 +285,7 @@ export async function PATCH(request: NextRequest) {
     
     if (!authUser || !authUser.userId) {
       return NextResponse.json(
-        { error: 'Неавторизованный доступ' },
+        { error: 'РќРµР°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹Р№ РґРѕСЃС‚СѓРї' },
         { status: 401 }
       );
     }
@@ -309,7 +308,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!task) {
       return NextResponse.json(
-        { error: 'Задача не найдена' },
+        { error: 'Р—Р°РґР°С‡Р° РЅРµ РЅР°Р№РґРµРЅР°' },
         { status: 404 }
       );
     }
@@ -349,20 +348,20 @@ export async function PATCH(request: NextRequest) {
     });
 
     return NextResponse.json({ 
-      message: 'Задача успешно обновлена', 
+      message: 'Р—Р°РґР°С‡Р° СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅР°', 
       task: updatedTask 
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Неверные данные', details: error.issues },
+        { error: 'РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ', details: error.issues },
         { status: 400 }
       );
     }
 
     console.error('Update task error:', error);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°' },
       { status: 500 }
     );
   }
@@ -374,7 +373,7 @@ export async function DELETE(request: NextRequest) {
     
     if (!authUser || !authUser.userId) {
       return NextResponse.json(
-        { error: 'Неавторизованный доступ' },
+        { error: 'РќРµР°РІС‚РѕСЂРёР·РѕРІР°РЅРЅС‹Р№ РґРѕСЃС‚СѓРї' },
         { status: 401 }
       );
     }
@@ -384,7 +383,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!taskId) {
       return NextResponse.json(
-        { error: 'ID задачи обязателен' },
+        { error: 'ID Р·Р°РґР°С‡Рё РѕР±СЏР·Р°С‚РµР»РµРЅ' },
         { status: 400 }
       );
     }
@@ -396,7 +395,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!task) {
       return NextResponse.json(
-        { error: 'Задача не найдена' },
+        { error: 'Р—Р°РґР°С‡Р° РЅРµ РЅР°Р№РґРµРЅР°' },
         { status: 404 }
       );
     }
@@ -407,12 +406,12 @@ export async function DELETE(request: NextRequest) {
     });
 
     return NextResponse.json({ 
-      message: 'Задача успешно удалена' 
+      message: 'Р—Р°РґР°С‡Р° СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅР°' 
     });
   } catch (error) {
     console.error('Delete task error:', error);
     return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
+      { error: 'Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°' },
       { status: 500 }
     );
   }

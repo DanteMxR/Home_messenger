@@ -112,6 +112,23 @@ export const useWebRTC = () => {
     }
   }, [])
 
+  const addVideoTrack = useCallback(async (): Promise<void> => {
+    const videoStream = await navigator.mediaDevices.getUserMedia({ video: true })
+    const videoTrack = videoStream.getVideoTracks()[0]
+    if (!videoTrack) return
+
+    if (localStreamRef.current) {
+      localStreamRef.current.addTrack(videoTrack)
+    }
+
+    // Add track to all existing peer connections so they can renegotiate
+    peersRef.current.forEach(({ pc }) => {
+      if (localStreamRef.current) {
+        pc.addTrack(videoTrack, localStreamRef.current)
+      }
+    })
+  }, [])
+
   const toggleAudio = useCallback((enabled: boolean) => {
     if (localStreamRef.current) {
       localStreamRef.current.getAudioTracks().forEach(track => {
@@ -149,6 +166,7 @@ export const useWebRTC = () => {
     createAnswer,
     setRemoteAnswer,
     addIceCandidate,
+    addVideoTrack,
     toggleAudio,
     toggleVideo,
     cleanup,
