@@ -40,12 +40,26 @@ export const CallScreen: React.FC<CallScreenProps> = ({
     if (!participant?.stream) return
 
     const stream = participant.stream
+    const hasVideo = stream.getVideoTracks().some(t => t.readyState === 'live')
 
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = stream
-    }
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.srcObject = stream
+    if (hasVideo) {
+      // Video call: video element handles both audio and video tracks
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream
+        remoteVideoRef.current.play().catch(console.error)
+      }
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = null
+      }
+    } else {
+      // Audio call: use dedicated audio element
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = stream
+        remoteAudioRef.current.play().catch(console.error)
+      }
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null
+      }
     }
 
     // Re-render when a new track is added (e.g. video added mid-call)
@@ -123,7 +137,7 @@ export const CallScreen: React.FC<CallScreenProps> = ({
           <div className="absolute inset-0 grid grid-cols-2 gap-1 p-2">
             {callState.participants.map(p => (
               <div key={p.userId} className="relative flex items-center justify-center rounded-lg bg-gray-800">
-                {p.stream && isVideoCall ? (
+                {p.stream && !callState.isVideoOff ? (
                   <VideoTile stream={p.stream} />
                 ) : (
                   <div className="flex flex-col items-center gap-2">
