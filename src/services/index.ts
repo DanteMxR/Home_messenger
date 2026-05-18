@@ -1,8 +1,8 @@
 // Service layer for API calls and business logic
-import { 
-  ChatUser, 
+import {
+  ChatUser,
   GroupChat,
-  Message, 
+  Message,
   Settings,
   ApiResponse,
   ChatListResponse,
@@ -10,6 +10,7 @@ import {
   FileUploadResponse,
   AuthUser
 } from '@/types'
+import type { Socket } from 'socket.io-client'
 
 /**
  * Chat service for managing chat-related API calls
@@ -294,7 +295,7 @@ export class SocketService {
   /**
    * Send a text message via socket
    */
-  static sendMessage(socket: any, content: string, receiverId: string): void {
+  static sendMessage(socket: Socket, content: string, receiverId: string): void {
     if (!socket?.connected) {
       throw new Error('Socket not connected')
     }
@@ -305,7 +306,7 @@ export class SocketService {
     })
   }
 
-  static sendGroupMessage(socket: any, content: string, chatId: string): void {
+  static sendGroupMessage(socket: Socket, content: string, chatId: string): void {
     if (!socket?.connected) {
       throw new Error('Socket not connected')
     }
@@ -320,7 +321,7 @@ export class SocketService {
    * Send a file message via socket
    */
   static sendFileMessage(
-    socket: any, 
+    socket: Socket, 
     messageData: {
       content: string
       receiverId: string
@@ -338,7 +339,7 @@ export class SocketService {
   }
 
   static sendGroupFileMessage(
-    socket: any,
+    socket: Socket,
     messageData: {
       content: string
       chatId: string
@@ -360,7 +361,7 @@ export class SocketService {
    * Send an audio message via socket (direct)
    */
   static sendAudioMessage(
-    socket: any,
+    socket: Socket,
     messageData: {
       content: string
       receiverId: string
@@ -381,7 +382,7 @@ export class SocketService {
    * Send an audio message to group via socket
    */
   static sendGroupAudioMessage(
-    socket: any,
+    socket: Socket,
     messageData: {
       content: string
       chatId: string
@@ -401,7 +402,7 @@ export class SocketService {
   /**
    * Mark messages as read via socket
    */
-  static markMessagesAsRead(socket: any, senderId: string): void {
+  static markMessagesAsRead(socket: Socket, senderId: string): void {
     if (socket?.connected) {
       socket.emit('messages:mark-as-read', { senderId })
     }
@@ -411,7 +412,7 @@ export class SocketService {
    * Setup socket event listeners
    */
   static setupMessageListeners(
-    socket: any,
+    socket: Socket,
     onMessageReceive: (message: Message) => void,
     onMessagesRead: () => void,
     onUserOnline: (data: { userId: string, username: string }) => void,

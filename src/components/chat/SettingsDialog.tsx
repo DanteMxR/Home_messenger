@@ -22,7 +22,7 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void
   user: User
   settings: Settings
-  onSettingsChange: (key: keyof Settings, value: any) => void
+  onSettingsChange: (key: keyof Settings, value: Settings[keyof Settings]) => void
   onSave: () => Promise<void>
   onAvatarUpload: (file: File) => Promise<void>
   onAvatarRemove: () => Promise<void>

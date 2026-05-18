@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Use raw query to get users
     let usersQuery = `SELECT id, username, avatar, isOnline, isAdmin, lastSeen, createdAt FROM users`;
-    const queryParams: any[] = [];
+    const queryParams: string[] = [];
     
     if (search) {
       usersQuery += ` WHERE username LIKE '%' || ${search} || '%'`;

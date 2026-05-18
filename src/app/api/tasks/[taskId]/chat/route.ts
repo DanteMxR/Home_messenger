@@ -5,16 +5,16 @@ import { Task } from '@/types';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { taskId: string } }
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
     const authUser = await getAuthUser();
-    
+
     if (!authUser) {
       return NextResponse.json({ error: 'Необходима авторизация' }, { status: 401 });
     }
 
-    const { taskId } = params;
+    const { taskId } = await params;
     
     // Check if the task exists (any authenticated user can create task chats)
     const task = await prisma.task.findUnique({

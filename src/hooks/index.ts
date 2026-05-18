@@ -261,8 +261,7 @@ export const useMessages = (selectedUser: User | GroupChat | null): UseMessagesR
         fileSize: blob.size
       }
     )
-    // Add audioDuration to temp message
-    ;(tempMessage as any).audioDuration = duration
+    tempMessage.audioDuration = duration
 
     setMessages(prev => [...prev, tempMessage])
     setIsUploading(true)
@@ -458,7 +457,7 @@ export const useSettings = (): UseSettingsReturn => {
     setSettings(prev => ({ ...prev, ...otherSettings }))
   }, [])
 
-  const handleSettingsChange = useCallback((key: keyof Settings, value: any) => {
+  const handleSettingsChange = useCallback((key: keyof Settings, value: Settings[keyof Settings]) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

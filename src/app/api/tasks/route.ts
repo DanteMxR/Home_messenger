@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const boardId = searchParams.get('boardId');
     const assignedToMe = searchParams.get('assignedToMe');
 
-    let whereClause: any = {};
+    const whereClause: { boardId?: string; assigneeId?: string } = {};
     
     if (boardId) {
       whereClause.boardId = boardId;
