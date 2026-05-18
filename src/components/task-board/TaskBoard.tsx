@@ -395,6 +395,44 @@ export default function TaskBoard({ board }: TaskBoardProps) {
     }
   };
 
+  const handleStatusChange = async (taskId: string, newStatus: string) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, status: newStatus }),
+      });
+
+      if (response.ok) {
+        setViewingTask((prev) => prev ? { ...prev, status: newStatus } : prev);
+        fetchTasks();
+      } else {
+        console.error('Failed to update task status:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
+  };
+
+  const handlePriorityChange = async (taskId: string, newPriority: string) => {
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, priority: newPriority }),
+      });
+
+      if (response.ok) {
+        setViewingTask((prev) => prev ? { ...prev, priority: newPriority } : prev);
+        fetchTasks();
+      } else {
+        console.error('Failed to update task priority:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error updating task priority:', error);
+    }
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     if (!window.confirm('Вы уверены, что хотите удалить эту задачу?')) {
       return;
@@ -813,23 +851,46 @@ export default function TaskBoard({ board }: TaskBoardProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Статус</Label>
-                  <p className="mt-1 rounded-md border border-input bg-muted/40 p-2 text-sm">
-                    {STATUS_COLUMNS.find((status) => status.id === viewingTask.status)?.title || viewingTask.status}
-                  </p>
+              <div>
+                <Label>Статус</Label>
+                <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {STATUS_COLUMNS.map((status) => (
+                    <button
+                      key={status.id}
+                      type="button"
+                      onClick={() => handleStatusChange(viewingTask.id, status.id)}
+                      className={cn(
+                        'flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-xs font-medium transition-all',
+                        viewingTask.status === status.id
+                          ? cn(status.columnClass, 'border-2 shadow-sm')
+                          : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      <span className={cn('h-2 w-2 shrink-0 rounded-full', status.dotClass)} />
+                      {status.title}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <Label>Приоритет</Label>
-                  <p
-                    className={cn(
-                      'mt-1 rounded-md border bg-muted/40 p-2 text-sm',
-                      getPriorityBadgeClass(viewingTask.priority)
-                    )}
-                  >
-                    {getPriorityLabel(viewingTask.priority)}
-                  </p>
+              </div>
+
+              <div>
+                <Label>Приоритет</Label>
+                <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handlePriorityChange(viewingTask.id, option.value)}
+                      className={cn(
+                        'flex items-center justify-center rounded-lg border px-2 py-2 text-xs font-medium transition-all',
+                        viewingTask.priority === option.value
+                          ? cn(option.badgeClass, 'border-2 shadow-sm')
+                          : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

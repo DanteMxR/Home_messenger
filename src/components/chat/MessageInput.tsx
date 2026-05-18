@@ -34,6 +34,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   disabled = false
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const emojiButtonRef = useRef<HTMLButtonElement>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [isDarkTheme, setIsDarkTheme] = useState(false)
 
@@ -54,6 +56,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (
+        emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node) &&
+        emojiButtonRef.current && !emojiButtonRef.current.contains(e.target as Node)
+      ) {
+        setShowEmojiPicker(false)
+      }
+    }
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [showEmojiPicker])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -80,9 +101,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const addEmoji = (emoji: { native: string }) => {
     onMessageChange(messageText + emoji.native)
-    if (window.innerWidth < 768) {
-      setShowEmojiPicker(false)
-    }
   }
 
   const canSend = !!messageText.trim() && !isUploading && !clipboardImage
@@ -147,15 +165,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               >
                 <Paperclip className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                disabled={controlsDisabled}
-                className="size-9 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground dark:hover:bg-white/8"
-              >
-                <Smile className="h-4 w-4" />
-              </Button>
+              <div ref={emojiButtonRef}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  disabled={controlsDisabled}
+                  className="size-9 rounded-full text-muted-foreground hover:bg-white/10 hover:text-foreground dark:hover:bg-white/8"
+                >
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </div>
               {messageText.trim() ? (
                 <Button
                   onClick={onSendMessage}
@@ -170,8 +190,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
               {/* Emoji picker */}
               {showEmojiPicker && (
-                <div className="emoji-picker-container absolute bottom-full right-10 z-10 mb-2">
-                  <div className="max-w-[calc(100vw-2rem)] md:max-w-xs">
+                <>
+                  {/* Mobile backdrop */}
+                  <div className="fixed inset-0 z-20 md:hidden" onClick={() => setShowEmojiPicker(false)} />
+                  <div
+                    ref={emojiPickerRef}
+                    className="fixed bottom-20 left-0 right-0 z-30 flex justify-center px-2 md:absolute md:bottom-full md:right-10 md:left-auto md:z-10 md:mb-2 md:block md:px-0"
+                  >
                     <Picker
                       data={data}
                       onEmojiSelect={addEmoji}
@@ -182,11 +207,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                       navPosition="bottom"
                       previewPosition="none"
                       skinTonePosition="none"
-                      maxFrequentRows={2}
-                      categories={['frequent', 'people', 'nature', 'foods', 'activity', 'places', 'objects', 'symbols']}
+                      maxFrequentRows={0}
+                      categories={['people', 'nature', 'foods', 'activity', 'places', 'objects', 'symbols']}
                     />
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
