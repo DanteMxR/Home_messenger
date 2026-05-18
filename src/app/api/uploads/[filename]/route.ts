@@ -45,15 +45,29 @@ export async function GET(
       case '.docx':
         contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         break
+      case '.webm':
+        contentType = 'audio/webm'
+        break
+      case '.mp3':
+        contentType = 'audio/mpeg'
+        break
+      case '.ogg':
+        contentType = 'audio/ogg'
+        break
+      case '.mp4':
+        contentType = 'video/mp4'
+        break
     }
-    
-    // Get original filename from the stored filename (everything after the timestamp)
+
+    const isAudioVideo = ['.webm', '.mp3', '.ogg', '.mp4'].includes(ext)
     const originalFilename = filename.substring(filename.indexOf('-') + 1)
-    
+
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(originalFilename)}"`,
+        'Content-Disposition': isAudioVideo
+          ? 'inline'
+          : `attachment; filename="${encodeURIComponent(originalFilename)}"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })

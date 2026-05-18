@@ -268,7 +268,7 @@ export default function ChatPage() {
         )}
 
         {selectedUser ? (
-          <>
+          <div className="flex min-h-0 flex-1 flex-col">
             {/* Chat Header */}
             <ChatHeader
               selectedUser={selectedUser}
@@ -286,7 +286,7 @@ export default function ChatPage() {
               }
             />
 
-            <div className="chat-pattern flex flex-1 flex-col">
+            <div className="chat-pattern flex min-h-0 flex-1 flex-col">
               {/* Messages */}
               <MessageList
                 messages={messages}
@@ -310,7 +310,7 @@ export default function ChatPage() {
                 />
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <EmptyState />
         )}
