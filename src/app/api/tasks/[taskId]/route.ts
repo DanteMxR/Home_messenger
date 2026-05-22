@@ -20,21 +20,14 @@ export async function GET(
       where: { id: taskId },
       include: {
         board: true,
-        assignee: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true
-          }
+        assignee: { select: { id: true, username: true, avatar: true } },
+        creator: { select: { id: true, username: true, avatar: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, username: true, avatar: true, isOnline: true } },
+          },
         },
-        creator: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true
-          }
-        }
-      }
+      },
     });
 
     if (!task) {

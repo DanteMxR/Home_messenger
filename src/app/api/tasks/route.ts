@@ -19,8 +19,9 @@ const updateTaskSchema = z.object({
   description: z.string().max(1000).optional(),
   status: z.enum(['todo', 'in_progress', 'review', 'done']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
-  assigneeId: z.string().optional(),
-  dueDate: z.string().datetime().optional(),
+  assigneeId: z.string().nullable().optional(),
+  assigneeIds: z.array(z.string()).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -292,64 +293,57 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     const parsedBody = updateTaskSchema.parse(body);
-    const id = parsedBody.id;
-    const updateData = (({
-      id,
-      ...rest
-    }) => rest)(parsedBody);
+    const { id, assigneeIds, ...updateData } = parsedBody;
 
-    // Check if task exists (any authenticated user can update tasks)
-    const task = await prisma.task.findUnique({
-      where: { id },
-      include: {
-        board: true
-      }
-    });
+    const task = await prisma.task.findUnique({ where: { id } });
 
     if (!task) {
       return NextResponse.json(
-        { error: 'Р—Р°РґР°С‡Р° РЅРµ РЅР°Р№РґРµРЅР°' },
+        { error: 'Задача не найдена' },
         { status: 404 }
       );
     }
 
-    // Update the task
-    const updatedTask = await prisma.task.update({
+    const updatedTask = await prisma.$transaction(async (tx) => {
+      const updated = await tx.task.update({
+        where: { id },
+        data: {
+          ...updateData,
+          assigneeId: updateData.assigneeId !== undefined ? updateData.assigneeId || null : undefined,
+          dueDate: updateData.dueDate !== undefined ? (updateData.dueDate ? new Date(updateData.dueDate as string) : null) : undefined,
+        },
+      });
+
+      if (assigneeIds !== undefined) {
+        await tx.taskAssignee.deleteMany({ where: { taskId: id } });
+        if (assigneeIds.length > 0) {
+          const unique = [...new Set(assigneeIds)];
+          await tx.taskAssignee.createMany({
+            data: unique.map((userId) => ({ taskId: id, userId })),
+          });
+        }
+      }
+
+      return updated;
+    });
+
+    const taskWithRelations = await prisma.task.findUnique({
       where: { id },
-      data: {
-        ...updateData,
-        assigneeId: updateData.assigneeId !== undefined ? updateData.assigneeId || null : undefined,
-        dueDate: updateData.dueDate !== undefined ? (updateData.dueDate ? new Date(updateData.dueDate as string) : null) : undefined,
-      },
       include: {
-        creator: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-            isOnline: true,
-          }
-        },
-        assignee: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-            isOnline: true,
-          }
-        },
-        board: {
-          select: {
-            id: true,
-            title: true,
-          }
+        creator: { select: { id: true, username: true, avatar: true, isOnline: true } },
+        assignee: { select: { id: true, username: true, avatar: true, isOnline: true } },
+        board: { select: { id: true, title: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, username: true, avatar: true, isOnline: true } },
+          },
         },
       },
     });
 
-    return NextResponse.json({ 
-      message: 'Р—Р°РґР°С‡Р° СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅР°', 
-      task: updatedTask 
+    return NextResponse.json({
+      message: 'Задача успешно обновлена',
+      task: taskWithRelations
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

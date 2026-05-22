@@ -127,7 +127,9 @@ export default function TaskBoard({ board }: TaskBoardProps) {
       const result = await response.json();
 
       if (response.ok && result.task) {
-        setViewingTask(result.task);
+        const task = result.task;
+        const assigneeIds = task.assignees?.map((a: { userId: string }) => a.userId) ?? (task.assigneeId ? [task.assigneeId] : []);
+        setViewingTask({ ...task, assigneeIds });
       } else {
         console.error('Failed to fetch task details:', result.error);
       }
@@ -190,7 +192,11 @@ export default function TaskBoard({ board }: TaskBoardProps) {
       const data = await response.json();
 
       if (response.ok) {
-        setTasks(data.tasks || []);
+        const mapped = (data.tasks || []).map((t: TaskWithRelations) => ({
+          ...t,
+          assigneeIds: t.assignees?.map((a) => a.userId) ?? (t.assigneeId ? [t.assigneeId] : []),
+        }));
+        setTasks(mapped);
       } else {
         console.error('Failed to fetch tasks:', data.error);
       }
