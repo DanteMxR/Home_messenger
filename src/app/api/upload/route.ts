@@ -3,6 +3,13 @@ import { getAuthUser } from '@/lib/auth'
 import fs from 'fs'
 import path from 'path'
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: '50mb',
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authUser = await getAuthUser()
